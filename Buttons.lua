@@ -41,7 +41,7 @@ NL.SpellIDs.bolt = NL.SpellIDs.bolt or { 686 }
 ------------------------------------------------------------------------
 
 local MENU_CONTENTS = {
-	buffmenu  = { "armor", "breath", "invisible", "eye", "summoning", "link", "ward", "banish" },
+	buffmenu  = { "armor", "fel_armor", "breath", "invisible", "eye", "summoning", "link", "ward", "banish" },
 	petmenu   = { "domination", "imp", "voidwalker", "succubus", "felhunter", "felguard", "inferno", "rit_of_doom", "enslave", "sacrifice" },
 }
 
@@ -74,7 +74,7 @@ end
 
 -- Self-cast usages get unit="player"; everything else uses normal targeting.
 local SELF_CAST = {
-	armor = true, link = true, ward = true, eye = true, invisible = true,
+	armor = true, fel_armor = true, link = true, ward = true, eye = true, invisible = true,
 }
 
 local STONES = { "soulstone", "healthstone", "spellstone", "firestone" }
@@ -90,9 +90,11 @@ local BAR_ORDER = {
 local CLUSTER = {
 	sphere     = { center = true },
 	buffmenu   = { angle = 135, dir = "up" },     -- top-left
+	spellstone = { angle =  90 },                 -- top      (off by default)
 	petmenu    = { angle =  45, dir = "up" },     -- top-right
 	mount      = { angle =   0, dir = "right" },  -- right
 	destroy    = { angle = -45 },                 -- bottom-right
+	firestone  = { angle = 270 },                 -- bottom   (off by default)
 	soulstone  = { angle = 225 },                 -- bottom-left
 	healthstone= { angle = 180, dir = "left" },   -- left
 }

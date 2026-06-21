@@ -38,6 +38,7 @@ NL.SpellIDs = {
 
 	-- Buffs / utility
 	armor       = { 687, 696, 706, 1086, 11733, 11734, 11735, 27260, 47793, 47889 }, -- Demon Skin/Armor
+	fel_armor   = { 28176, 28189, 403619 },  -- 403619 = SoD rune; 28176/28189 = TBC
 	breath      = { 5697 },                  -- Unending Breath
 	invisible   = { 132, 2970, 11743 },      -- Detect Invisibility
 	eye         = { 126 },                   -- Eye of Kilrogg

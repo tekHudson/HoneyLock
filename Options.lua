@@ -66,68 +66,89 @@ local function buildPanel()
 	sub:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -4)
 	sub:SetText("Lightweight warlock helper for Season of Discovery.")
 
-	local y = -60
-	local function place(widget, indent)
-		widget:SetPoint("TOPLEFT", panel, "TOPLEFT", 16 + (indent or 0), y)
-		y = y - 32
-		return widget
+	-- Two-column layout with section headers for a compact, tidy panel.
+	local COL1, COL2 = 22, 320
+	local ROW = 26
+	local y = -64
+
+	local function header(text)
+		y = y - 12
+		local h = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+		h:SetPoint("TOPLEFT", 16, y)
+		h:SetText("|cffffd100" .. text .. "|r")
+		local line = panel:CreateTexture(nil, "ARTWORK")
+		line:SetColorTexture(1, 0.82, 0, 0.25)
+		line:SetPoint("TOPLEFT", 16, y - 16)
+		line:SetPoint("TOPRIGHT", panel, "TOPLEFT", 560, y - 16)
+		line:SetHeight(1)
+		y = y - 22
 	end
 
-	-- Bar
-	place(newCheckbox(panel, "Show bar", "Toggle the warlock button bar.",
+	-- Place a checkbox at a column on the current row (does not advance y).
+	local function put(col, label, tooltip, get, set)
+		local c = newCheckbox(panel, label, tooltip, get, set)
+		c:SetPoint("TOPLEFT", panel, "TOPLEFT", col, y)
+		return c
+	end
+	local function nextRow() y = y - ROW end
+
+	-- Setter helper for per-button visibility toggles.
+	local function showGet(key) return function() return NL.db.bar.show[key] end end
+	local function showSet(key)
+		return function(v)
+			NL.db.bar.show[key] = v
+			if InCombatLockdown() then NL.deferredRefresh = true else NL:LayoutBar() end
+		end
+	end
+
+	header("Bar")
+	put(COL1, "Show bar", "Toggle the warlock button bar.",
 		function() return NL.db.bar.shown end,
-		function(v) NL.db.bar.shown = v; NL:RefreshBar() end))
-
-	place(newCheckbox(panel, "Lock bar position", "Prevent dragging the bar.",
+		function(v) NL.db.bar.shown = v; NL:RefreshBar() end)
+	put(COL2, "Lock position", "Prevent dragging the bar.",
 		function() return NL.db.bar.locked end,
-		function(v) NL.db.bar.locked = v end))
+		function(v) NL.db.bar.locked = v end)
+	nextRow()
 
-	-- per-button visibility
-	local toggles = {
-		{ "spellstone", "Show Spellstone button" },
-		{ "firestone",  "Show Firestone button" },
-		{ "buffmenu",   "Show Buff menu" },
-		{ "petmenu",    "Show Pet menu" },
-		{ "mount",      "Show Mount button" },
-		{ "destroy",    "Show Destroy-shards button" },
-	}
-	for _, t in ipairs(toggles) do
-		local key = t[1]
-		place(newCheckbox(panel, t[2], nil,
-			function() return NL.db.bar.show[key] end,
-			function(v)
-				NL.db.bar.show[key] = v
-				if InCombatLockdown() then NL.deferredRefresh = true else NL:LayoutBar() end
-			end), 12)
-	end
+	header("Buttons")
+	put(COL1, "Spellstone", "Show the Spellstone button (top).", showGet("spellstone"), showSet("spellstone"))
+	put(COL2, "Firestone", "Show the Firestone button (bottom).", showGet("firestone"), showSet("firestone"))
+	nextRow()
+	put(COL1, "Buff menu", nil, showGet("buffmenu"), showSet("buffmenu"))
+	put(COL2, "Pet menu", nil, showGet("petmenu"), showSet("petmenu"))
+	nextRow()
+	put(COL1, "Mount", nil, showGet("mount"), showSet("mount"))
+	put(COL2, "Destroy-shards", nil, showGet("destroy"), showSet("destroy"))
+	nextRow()
 
-	y = y - 8
-	place(newCheckbox(panel, "Show soul shard counter", nil,
+	header("Soul shards")
+	put(COL1, "Shard counter", "Show the shard count on the sphere.",
 		function() return NL.db.shards.showCounter end,
-		function(v) NL.db.shards.showCounter = v; NL:UpdateShardDisplay() end))
-
-	place(newCheckbox(panel, "Auto-organize shards into soul bag", nil,
+		function(v) NL.db.shards.showCounter = v; NL:UpdateShardDisplay() end)
+	put(COL2, "Auto-organize", "Move loose shards into a soul bag.",
 		function() return NL.db.shards.organize end,
-		function(v) NL.db.shards.organize = v end))
+		function(v) NL.db.shards.organize = v end)
+	nextRow()
 
-	y = y - 8
-	place(newCheckbox(panel, "Timers enabled", nil,
+	header("Timers & alerts")
+	put(COL1, "Timers", "Show Soulstone / Banish / Enslave timers.",
 		function() return NL.db.timers.enabled end,
-		function(v) NL.db.timers.enabled = v end))
-
-	y = y - 8
-	place(newCheckbox(panel, "Nightfall alert", "Flash when Shadow Trance procs.",
+		function(v) NL.db.timers.enabled = v end)
+	put(COL2, "Nightfall flash", "Flash when Shadow Trance procs.",
 		function() return NL.db.alerts.nightfall end,
-		function(v) NL.db.alerts.nightfall = v; if not v then NL:HideNightfall() end end))
-
-	place(newCheckbox(panel, "Nightfall sound", nil,
+		function(v) NL.db.alerts.nightfall = v; if not v then NL:HideNightfall() end end)
+	nextRow()
+	put(COL1, "Nightfall sound", nil,
 		function() return NL.db.alerts.sound end,
-		function(v) NL.db.alerts.sound = v end))
+		function(v) NL.db.alerts.sound = v end)
+	nextRow()
 
-	y = y - 24
-	local scale = place(newSlider(panel, "Bar scale", 0.5, 2.0, 0.05,
+	header("Display")
+	y = y - 18
+	local scale = newSlider(panel, "Bar scale", 0.5, 2.0, 0.05,
 		function() return NL.db.bar.scale end,
-		function(v) NL.db.bar.scale = v; NL:RefreshBar() end))
+		function(v) NL.db.bar.scale = v; NL:RefreshBar() end)
+	scale:SetPoint("TOPLEFT", panel, "TOPLEFT", COL1 + 8, y)
 
 	return panel
 end
