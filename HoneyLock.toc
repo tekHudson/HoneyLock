@@ -1,0 +1,23 @@
+## Interface: 11508
+## Title: HoneyLock
+## Notes: Lightweight warlock helper for Season of Discovery
+## Author: Tek
+## Version: 0.1.0
+## SavedVariables: HoneyLockDB
+
+# Libraries (pure-Lua, load order matters)
+libs\LibStub\LibStub.lua
+libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+libs\AceAddon-3.0\AceAddon-3.0.lua
+libs\AceEvent-3.0\AceEvent-3.0.lua
+libs\AceTimer-3.0\AceTimer-3.0.lua
+
+# Core
+Core.lua
+Spells.lua
+Buttons.lua
+Shards.lua
+Timers.lua
+Alerts.lua
+Options.lua
+Events.lua
