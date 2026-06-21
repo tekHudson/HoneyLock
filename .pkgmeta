@@ -1,0 +1,11 @@
+package-as: HoneyLock
+
+enable-nolib-creation: no
+
+# Libraries are vendored in libs/ (not pulled as externals), so no externals
+# section is needed.
+
+ignore:
+  - .github
+  - .gitignore
+  - README.md
