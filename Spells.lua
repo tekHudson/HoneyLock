@@ -85,45 +85,43 @@ end
 -- by name, so we don't have to hardcode every rune's ID.
 NL.knownByName = {}
 
+-- Scan the player's spellbook by flat index (no tab-count API needed — the
+-- skill-line count function is missing on the 1.15.4 SoD client). Records every
+-- *learned* spell name -> highest spellID. Skips not-yet-learned future spells.
 function NL:RefreshKnownSpells()
 	wipe(self.knownByName)
 
 	local function record(name, id)
-		if name and id then
-			if not self.knownByName[name] or id > self.knownByName[name] then
-				self.knownByName[name] = id
-			end
+		if name and id and (not self.knownByName[name] or id > self.knownByName[name]) then
+			self.knownByName[name] = id
 		end
 	end
 
-	-- Modern API (WoW 11.x / Classic Era 1.15.4+, which SoD runs on).
-	if C_SpellBook and C_SpellBook.GetNumSpellBookSkillLines then
-		local PLAYER = Enum.SpellBookSpellBank.Player
-		for line = 1, C_SpellBook.GetNumSpellBookSkillLines() do
-			local info = C_SpellBook.GetSpellBookSkillLineInfo(line)
-			if info then
-				local from = (info.itemIndexOffset or 0) + 1
-				local to = (info.itemIndexOffset or 0) + (info.numSpellBookItems or 0)
-				for i = from, to do
-					local item = C_SpellBook.GetSpellBookItemInfo(i, PLAYER)
-					if item and item.spellID then
-						record(item.name or C_SpellBook.GetSpellBookItemName(i, PLAYER), item.spellID)
-					end
-				end
+	local C = C_SpellBook
+	if C and C.GetSpellBookItemName and Enum and Enum.SpellBookSpellBank then
+		-- Modern API, iterated by flat index.
+		local bank = Enum.SpellBookSpellBank.Player
+		local FUTURE = Enum.SpellBookItemType and Enum.SpellBookItemType.FutureSpell
+		for i = 1, 1024 do
+			local name = C.GetSpellBookItemName(i, bank)
+			if not name then break end
+			local info = C.GetSpellBookItemInfo and C.GetSpellBookItemInfo(i, bank)
+			if not info or info.itemType ~= FUTURE then
+				local id = (info and info.spellID) or select(7, GetSpellInfo(name))
+				record(name, id)
 			end
 		end
 		return
 	end
 
-	-- Legacy fallback (older clients).
-	local numTabs = GetNumSpellTabs and GetNumSpellTabs() or 0
-	for tab = 1, numTabs do
-		local _, _, offset, numSpells = GetSpellTabInfo(tab)
-		if offset and numSpells then
-			for i = offset + 1, offset + numSpells do
-				local name = GetSpellBookItemName and GetSpellBookItemName(i, "spell")
-				local _, id = GetSpellBookItemInfo and GetSpellBookItemInfo(i, "spell")
-				record(name, id)
+	-- Legacy global API, iterated by flat index.
+	if GetSpellBookItemName then
+		for i = 1, 1024 do
+			local name = GetSpellBookItemName(i, "spell")
+			if not name then break end
+			local itemType, id = GetSpellBookItemInfo(i, "spell")
+			if itemType ~= "FUTURESPELL" then
+				record(name, id or select(7, GetSpellInfo(name)))
 			end
 		end
 	end
@@ -178,7 +176,10 @@ function NL:GetCastName(usage)
 	if not id then return nil end
 	local name = GetSpellInfo(id)
 	if not name then return nil end
-	return name:match("^(.-)%(") or name   -- strip "(Rank X)" if present
+	-- Use the spell's exact name as the client reports it (on this client the
+	-- tier/rank is part of the name, e.g. "Create Healthstone (Minor)"), since
+	-- a secure cast must match the spell name exactly. Just trim stray spaces.
+	return (name:gsub("^%s+", ""):gsub("%s+$", ""))
 end
 
 -- Icon texture for a usage (uses highest known, else lowest).

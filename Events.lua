@@ -43,20 +43,36 @@ function NL:InitEvents()
 	self:RegisterEvent("BAG_UPDATE", requestBagScan)
 	self:RegisterEvent("BAG_UPDATE_DELAYED", requestBagScan)
 
+	-- Rescan the spellbook and refresh button availability. Throttled, since
+	-- the source events (gear/rune/spell changes) can fire in bursts.
+	local refreshPending = false
 	local function refresh()
-		self:RefreshKnownSpells()
-		if InCombatLockdown() then
-			self.deferredRefresh = true
-		else
-			self:RefreshButtons()
-		end
+		if refreshPending then return end
+		refreshPending = true
+		C_Timer.After(0.3, function()
+			refreshPending = false
+			self:RefreshKnownSpells()
+			if InCombatLockdown() then
+				self.deferredRefresh = true
+			else
+				self:RefreshButtons()
+			end
+		end)
 	end
+	-- learning/unlearning spells and (SoD) rune changes
 	self:RegisterEvent("SPELLS_CHANGED", refresh)
 	self:RegisterEvent("LEARNED_SPELL_IN_TAB", refresh)
+	self:RegisterEvent("PLAYER_ENTERING_WORLD", refresh)
+	-- changing gear / engraving runes
+	self:RegisterEvent("PLAYER_EQUIPMENT_CHANGED", refresh)
+	-- talent/spec changes (best-effort; ignored if the event doesn't exist)
+	pcall(function() self:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED", refresh) end)
+	pcall(function() self:RegisterEvent("CHARACTER_POINTS_CHANGED", refresh) end)
 
 	self:RegisterEvent("PLAYER_REGEN_ENABLED", function()
 		if self.deferredRefresh then
 			self.deferredRefresh = false
+			self:RefreshKnownSpells()
 			self:RefreshButtons()
 		end
 	end)

@@ -45,33 +45,6 @@ local MENU_CONTENTS = {
 	petmenu   = { "domination", "imp", "voidwalker", "succubus", "felhunter", "felguard", "inferno", "rit_of_doom", "enslave", "sacrifice" },
 }
 
--- Diagnostics: /hl debug  (output goes to a copy-friendly window)
-function NL:Debug()
-	local lines = {}
-	local function add(s) lines[#lines + 1] = s end
-
-	add("=== HoneyLock v" .. tostring(self.version) .. " debug ===")
-
-	local function dumpGroup(title, usages)
-		add("")
-		add(title .. " (usage / known / id / castName):")
-		for _, usage in ipairs(usages) do
-			add(("  %-12s %-5s %-8s %s"):format(
-				usage,
-				tostring(self:IsKnown(usage)),
-				tostring(self:HighestKnownID(usage)),
-				tostring(self:GetCastName(usage))))
-		end
-	end
-
-	dumpGroup("Stones", STONES)
-	dumpGroup("Buff menu", MENU_CONTENTS.buffmenu)
-	dumpGroup("Pet menu", MENU_CONTENTS.petmenu)
-	dumpGroup("Other", { "mounts", "bolt" })
-
-	self:ShowCopyWindow(table.concat(lines, "\n"))
-end
-
 -- Self-cast usages get unit="player"; everything else uses normal targeting.
 local SELF_CAST = {
 	armor = true, fel_armor = true, link = true, ward = true, eye = true, invisible = true,
@@ -98,6 +71,47 @@ local CLUSTER = {
 	soulstone  = { angle = 225 },                 -- bottom-left
 	healthstone= { angle = 180, dir = "left" },   -- left
 }
+
+-- Diagnostics: /hl debug  (output goes to a copy-friendly window)
+function NL:Debug()
+	local lines = {}
+	local function add(s) lines[#lines + 1] = s end
+	add("=== HoneyLock v" .. tostring(self.version) .. " debug ===")
+	add("knownByName entries: " .. tostring(self.knownByName and #(function() local t={} for k in pairs(self.knownByName) do t[#t+1]=k end return t end)() or 0))
+
+	local function dumpGroup(title, usages)
+		add("")
+		add(title .. " (usage / known / id / castName):")
+		for _, usage in ipairs(usages) do
+			add(("  %-12s %-5s %-9s %s"):format(
+				usage, tostring(self:IsKnown(usage)),
+				tostring(self:HighestKnownID(usage)), tostring(self:GetCastName(usage))))
+		end
+	end
+
+	dumpGroup("Stones", STONES)
+	dumpGroup("Buff menu", MENU_CONTENTS.buffmenu)
+	dumpGroup("Pet menu", MENU_CONTENTS.petmenu)
+	dumpGroup("Other", { "mounts", "bolt" })
+
+	add("")
+	add("Stone button attributes (type1/spell1/type2/spell2/item1/held):")
+	for _, usage in ipairs(STONES) do
+		local b = self.stoneButtons and self.stoneButtons[usage]
+		if b then
+			add(("  %-12s t1=%s s1=%s t2=%s s2=%s i1=%s held=%s"):format(
+				usage,
+				tostring(b:GetAttribute("type1")), tostring(b:GetAttribute("spell1")),
+				tostring(b:GetAttribute("type2")), tostring(b:GetAttribute("spell2")),
+				tostring(b:GetAttribute("item1")), tostring(b.heldItemID)))
+		else
+			add("  " .. usage .. " (no button)")
+		end
+	end
+	add("InCombatLockdown: " .. tostring(InCombatLockdown()))
+
+	self:ShowCopyWindow(table.concat(lines, "\n"))
+end
 
 ------------------------------------------------------------------------
 -- Low-level: an icon-faced secure action button
@@ -170,7 +184,17 @@ function NL:ConfigureSpellButton(btn, usage)
 	else
 		btn:SetAttribute("unit", nil)
 	end
-	if btn.icon then btn.icon:SetTexture(self:GetIcon(usage)) end
+	self:UpdateButtonAvailability(btn, usage)
+end
+
+-- Grey out (desaturate + dim) a button when its spell isn't currently known.
+function NL:UpdateButtonAvailability(btn, usage)
+	if not btn.icon then return end
+	btn.icon:SetTexture(self:GetIcon(usage))
+	local known = self:IsKnown(usage)
+	btn.icon:SetDesaturated(not known)
+	btn.icon:SetAlpha(known and 1 or 0.4)
+	if btn.ring then btn.ring:SetAlpha(known and 0.9 or 0.4) end
 end
 
 ------------------------------------------------------------------------
@@ -192,9 +216,7 @@ function NL:ConfigureStoneButton(btn, usage)
 		btn:SetAttribute("type1", "spell")
 		btn:SetAttribute("spell1", castName)
 	end
-	if btn.icon then
-		btn.icon:SetTexture(self:GetIcon(usage))
-	end
+	self:UpdateButtonAvailability(btn, usage)
 end
 
 -- Called by Shards.lua after a bag scan: itemID or nil.
@@ -228,6 +250,8 @@ function NL:MakeMenu(name, parent, key, icon)
 		child:SetSize(size, size)
 		child:Hide()
 		child._usage = usage
+		-- Collapse the flyout after the ability is clicked.
+		child:SetScript("PostClick", function() flyout:Hide() end)
 		if not flyout.children then flyout.children = {} end
 		table.insert(flyout.children, child)
 	end
@@ -327,7 +351,7 @@ function NL:BuildBar()
 	local sphere = CreateFrame("Button", "HoneyLockSphere", bar, "SecureActionButtonTemplate")
 	sphere:RegisterForDrag("LeftButton")
 	sphere:RegisterForClicks("AnyUp")
-	styleIcon(sphere, "Interface\\Icons\\Spell_Shadow_ShadowBolt")
+	styleIcon(sphere, "Interface\\AddOns\\HoneyLock\\Textures\\icon")
 	sphere:SetScript("OnDragStart", function(self)
 		if not NL.db.bar.locked then bar:StartMoving() end
 	end)
@@ -339,10 +363,16 @@ function NL:BuildBar()
 	sphere:SetScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 		GameTooltip:AddLine("HoneyLock")
-		GameTooltip:AddLine("Drag to move. /hl for options.", 0.7, 0.7, 0.7)
+		GameTooltip:AddLine("Drag to move  |  Right-click: options", 0.7, 0.7, 0.7)
 		GameTooltip:Show()
 	end)
 	sphere:SetScript("OnLeave", GameTooltip_Hide)
+	-- Right-click opens the options panel (insecure post-hook; out of combat).
+	sphere:SetScript("PostClick", function(self, button)
+		if button == "RightButton" and not InCombatLockdown() then
+			NL:OpenOptions()
+		end
+	end)
 	self.barButtons.sphere = sphere
 
 	-- stones
@@ -383,7 +413,7 @@ function NL:BuildBar()
 	destroy:SetScript("OnLeave", GameTooltip_Hide)
 	self.barButtons.destroy = destroy
 
-	-- sphere casts main spell on left click
+	-- sphere is a logo/handle only (drag + right-click options), no cast
 	self:ConfigureSphere()
 
 	self:LayoutBar()
@@ -394,8 +424,9 @@ function NL:ConfigureSphere()
 	if InCombatLockdown() or not self.barButtons then return end
 	local sphere = self.barButtons.sphere
 	if not sphere then return end
-	sphere:SetAttribute("type1", "spell")
-	sphere:SetAttribute("spell1", self:GetCastName(self.db.bar.mainSpell))
+	-- No spell on the center; clear any cast attributes.
+	sphere:SetAttribute("type1", nil)
+	sphere:SetAttribute("spell1", nil)
 end
 
 function NL:LayoutBar()
