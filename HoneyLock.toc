@@ -4,6 +4,7 @@
 ## Author: Tek
 ## Version: 0.1.0
 ## SavedVariables: HoneyLockDB
+## X-Curse-Project-ID: 1583784
 
 # Libraries (pure-Lua, load order matters)
 libs\LibStub\LibStub.lua
