@@ -6,6 +6,12 @@ This project follows [Keep a Changelog](https://keepachangelog.com) and
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-06-26
+### Fixed
+- Changing a menu's default ability now takes effect immediately instead of
+  only after a reload (the secure attribute apply is deferred out of the
+  dropdown's handler).
+
 ## [0.1.2] - 2026-06-26
 ### Added
 - Flyout menus now have a configurable left-click default: left-click the Buff
@@ -46,7 +52,8 @@ This project follows [Keep a Changelog](https://keepachangelog.com) and
 - Native Blizzard options panel (`/hl`).
 - 100% Lua, no XML, stock spell icons (octagon-masked); minimal libraries.
 
-[Unreleased]: https://github.com/tekHudson/HoneyLock/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/tekHudson/HoneyLock/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/tekHudson/HoneyLock/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/tekHudson/HoneyLock/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/tekHudson/HoneyLock/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/tekHudson/HoneyLock/releases/tag/v0.1.0

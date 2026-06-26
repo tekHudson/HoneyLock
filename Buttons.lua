@@ -559,11 +559,15 @@ end
 -- Called from options when a menu's default ability changes.
 function NL:SetMenuDefault(key, usage)
 	self.db.bar.menuDefault[key] = usage
-	if self.barButtons and self.barButtons[key] then
-		if InCombatLockdown() then
-			self.deferredRefresh = true
-		else
-			self:ConfigureMenuDefault(self.barButtons[key])
-		end
+	local anchor = self.barButtons and self.barButtons[key]
+	if not anchor then return end
+	if InCombatLockdown() then
+		self.deferredRefresh = true
+	else
+		-- Apply on the next frame: changing secure attributes from inside the
+		-- dropdown's click handler gets dropped, so escape that context first.
+		C_Timer.After(0, function()
+			if not InCombatLockdown() then NL:ConfigureMenuDefault(anchor) end
+		end)
 	end
 end
