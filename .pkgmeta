@@ -2,6 +2,10 @@ package-as: HoneyLock
 
 enable-nolib-creation: no
 
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
+
 # Libraries are vendored in libs/ (not pulled as externals), so no externals
 # section is needed.
 

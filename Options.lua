@@ -50,6 +50,79 @@ local function newSlider(parent, label, minV, maxV, step, get, set)
 	return s
 end
 
+local ddCount = 0
+local function newDropdown(parent, label, choices, get, set)
+	ddCount = ddCount + 1
+	local title = parent:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	title:SetText(label)
+	local dd = CreateFrame("Frame", "HoneyLockDropdown" .. ddCount, parent, "UIDropDownMenuTemplate")
+	dd.title = title
+
+	local function textFor(value)
+		for _, c in ipairs(choices) do if c.value == value then return c.text end end
+		return tostring(value)
+	end
+	UIDropDownMenu_SetWidth(dd, 150)
+	UIDropDownMenu_Initialize(dd, function()
+		for _, c in ipairs(choices) do
+			local info = UIDropDownMenu_CreateInfo()
+			info.text = c.text
+			info.checked = (get() == c.value)
+			info.func = function()
+				set(c.value)
+				UIDropDownMenu_SetText(dd, c.text)
+				CloseDropDownMenus()
+			end
+			UIDropDownMenu_AddButton(info)
+		end
+	end)
+	dd:SetScript("OnShow", function() UIDropDownMenu_SetText(dd, textFor(get())) end)
+	UIDropDownMenu_SetText(dd, textFor(get()))
+	-- expose a positioning anchor (the label sits just above the dropdown)
+	dd.PlaceAt = function(_, px, py)
+		title:SetPoint("TOPLEFT", parent, "TOPLEFT", px + 18, py)
+		dd:SetPoint("TOPLEFT", parent, "TOPLEFT", px, py - 16)
+	end
+	return dd
+end
+
+-- Available counter fonts (files present in every WoW client).
+local FONT_CHOICES = {
+	{ text = "Friz Quadrata (default)", value = "Fonts\\FRIZQT__.TTF" },
+	{ text = "Arial Narrow",            value = "Fonts\\ARIALN.TTF" },
+	{ text = "Skurri",                  value = "Fonts\\SKURRI.TTF" },
+	{ text = "Morpheus",                value = "Fonts\\MORPHEUS.TTF" },
+}
+
+-- A small numeric (integer) input box with a label.
+local function newIntBox(parent, label, minV, maxV, get, set)
+	local title = parent:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	title:SetText(label)
+	local eb = CreateFrame("EditBox", nil, parent, "InputBoxTemplate")
+	eb:SetAutoFocus(false)
+	eb:SetNumeric(true)
+	eb:SetMaxLetters(3)
+	eb:SetSize(44, 20)
+	eb.title = title
+	local function commit()
+		local v = tonumber(eb:GetText()) or get()
+		if minV then v = math.max(minV, v) end
+		if maxV then v = math.min(maxV, v) end
+		set(v)
+		eb:SetText(tostring(v))
+		eb:ClearFocus()
+	end
+	eb:SetScript("OnEnterPressed", commit)
+	eb:SetScript("OnEditFocusLost", commit)
+	eb:SetScript("OnShow", function() eb:SetText(tostring(get())) end)
+	eb:SetText(tostring(get()))
+	eb.PlaceAt = function(_, px, py)
+		title:SetPoint("TOPLEFT", parent, "TOPLEFT", px, py)
+		eb:SetPoint("LEFT", title, "RIGHT", 10, 0)
+	end
+	return eb
+end
+
 ------------------------------------------------------------------------
 -- Build panel
 ------------------------------------------------------------------------
@@ -121,14 +194,42 @@ local function buildPanel()
 	put(COL2, "Destroy-shards", nil, showGet("destroy"), showSet("destroy"))
 	nextRow()
 
+	header("Menu defaults (left-click cast)")
+	local function menuChoices(key)
+		local t = {}
+		for _, usage in ipairs(NL.MenuUsages[key]) do
+			t[#t + 1] = { text = NL:GetCastName(usage) or usage, value = usage }
+		end
+		return t
+	end
+	local buffDD = newDropdown(panel, "Buff menu", menuChoices("buffmenu"),
+		function() return NL.db.bar.menuDefault.buffmenu end,
+		function(v) NL:SetMenuDefault("buffmenu", v) end)
+	buffDD:PlaceAt(COL1 - 4, y)
+	local petDD = newDropdown(panel, "Pet menu", menuChoices("petmenu"),
+		function() return NL.db.bar.menuDefault.petmenu end,
+		function(v) NL:SetMenuDefault("petmenu", v) end)
+	petDD:PlaceAt(COL2 - 4, y)
+	y = y - 48
+
 	header("Soul shards")
-	put(COL1, "Shard counter", "Show the shard count on the sphere.",
+	put(COL1, "Shard counter", "Show the shard count below the logo.",
 		function() return NL.db.shards.showCounter end,
 		function(v) NL.db.shards.showCounter = v; NL:UpdateShardDisplay() end)
 	put(COL2, "Auto-organize", "Move loose shards into a soul bag.",
 		function() return NL.db.shards.organize end,
 		function(v) NL.db.shards.organize = v end)
 	nextRow()
+	-- counter font (dropdown) + size (integer)
+	local fontDD = newDropdown(panel, "Counter font", FONT_CHOICES,
+		function() return NL.db.shards.font end,
+		function(v) NL.db.shards.font = v; NL:UpdateShardDisplay() end)
+	fontDD:PlaceAt(COL1 - 4, y)
+	local sizeBox = newIntBox(panel, "Size", 6, 48,
+		function() return NL.db.shards.fontSize end,
+		function(v) NL.db.shards.fontSize = v; NL:UpdateShardDisplay() end)
+	sizeBox:PlaceAt(COL2, y - 16)
+	y = y - 48
 
 	header("Timers & alerts")
 	put(COL1, "Timers", "Show Soulstone / Banish / Enslave timers.",

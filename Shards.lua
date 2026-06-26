@@ -11,6 +11,8 @@ local NL = _G.HoneyLock
 NL:RegisterDefaults({
 	shards = {
 		showCounter = true,
+		font = "Fonts\\FRIZQT__.TTF",  -- counter font face
+		fontSize = 16,                 -- counter font size
 		keep = 28,          -- destroy shards above this many
 		organize = false,   -- move shards into the designated bag
 		bagSlot = nil,      -- container index to keep shards in (nil = auto)
@@ -93,19 +95,23 @@ end
 function NL:UpdateShardDisplay()
 	local sphere = self.barButtons and self.barButtons.sphere
 	if not sphere then return end
+	local s = self.db.shards
 	if not sphere.shardText then
-		local fs = sphere:CreateFontString(nil, "OVERLAY", "NumberFontNormalSmall")
-		-- Sit on the disc (corners are transparent now) with a shadow for legibility.
-		fs:SetPoint("BOTTOM", sphere, "BOTTOM", 1, 3)
+		local fs = sphere:CreateFontString(nil, "OVERLAY")
 		fs:SetShadowColor(0, 0, 0, 1)
 		fs:SetShadowOffset(1, -1)
 		sphere.shardText = fs
 	end
-	if self.db.shards.showCounter and self.shardCount then
-		sphere.shardText:SetText(self.shardCount)
-		sphere.shardText:Show()
+	local fs = sphere.shardText
+	-- Bottom-center, just below the logo (outside it).
+	fs:ClearAllPoints()
+	fs:SetPoint("TOP", sphere, "BOTTOM", 0, -1)
+	fs:SetFont(s.font or "Fonts\\FRIZQT__.TTF", s.fontSize or 16, "OUTLINE")
+	if s.showCounter and self.shardCount then
+		fs:SetText(self.shardCount)
+		fs:Show()
 	else
-		sphere.shardText:Hide()
+		fs:Hide()
 	end
 end
 

@@ -30,6 +30,8 @@ NL:RegisterDefaults({
 			mount = true, destroy = true,
 		},
 		mainSpell = "bolt",      -- left-click on sphere (Shadow Bolt)
+		-- left-click default for each flyout menu (right-click opens the flyout)
+		menuDefault = { buffmenu = "armor", petmenu = "imp" },
 	},
 })
 
@@ -44,6 +46,7 @@ local MENU_CONTENTS = {
 	buffmenu  = { "armor", "fel_armor", "breath", "invisible", "eye", "summoning", "link", "ward", "banish" },
 	petmenu   = { "domination", "imp", "voidwalker", "succubus", "felhunter", "felguard", "inferno", "rit_of_doom", "enslave", "sacrifice" },
 }
+NL.MenuUsages = MENU_CONTENTS  -- exposed for the options panel
 
 -- Self-cast usages get unit="player"; everything else uses normal targeting.
 local SELF_CAST = {
@@ -232,7 +235,8 @@ end
 ------------------------------------------------------------------------
 
 function NL:MakeMenu(name, parent, key, icon)
-	local anchor = CreateFrame("Button", name, parent, "SecureHandlerClickTemplate")
+	-- Left-click casts the menu's default ability; right-click opens the flyout.
+	local anchor = CreateFrame("Button", name, parent, "SecureActionButtonTemplate")
 	anchor:RegisterForClicks("AnyUp")
 	styleIcon(anchor, icon)
 
@@ -244,36 +248,65 @@ function NL:MakeMenu(name, parent, key, icon)
 	anchor.dir = (CLUSTER[key] and CLUSTER[key].dir) or "down"
 
 	local entries = MENU_CONTENTS[key]
-	local shown = 0
 	for _, usage in ipairs(entries) do
 		local child = self:MakeSpellButton(name .. "_" .. usage, flyout, usage)
 		child:SetSize(size, size)
 		child:Hide()
 		child._usage = usage
-		-- Collapse the flyout after the ability is clicked.
-		child:SetScript("PostClick", function() flyout:Hide() end)
+		-- Collapse the flyout after the ability is clicked (out of combat).
+		child:SetScript("PostClick", function()
+			if not InCombatLockdown() then flyout:Hide() end
+		end)
 		if not flyout.children then flyout.children = {} end
 		table.insert(flyout.children, child)
 	end
 
 	anchor.flyout = flyout
 	anchor.menuKey = key
-	anchor:SetFrameRef("flyout", flyout)
-	-- Toggle the flyout from the secure environment (works in combat).
-	anchor:SetAttribute("_onclick", [[
-		local f = self:GetFrameRef("flyout")
-		if f:IsShown() then f:Hide() else f:Show() end
-	]])
+
+	-- Right-click toggles the flyout (out of combat); left-click casts default.
+	anchor:SetScript("PostClick", function(self, button)
+		if button == "RightButton" and not InCombatLockdown() then
+			flyout:SetShown(not flyout:IsShown())
+		end
+	end)
 
 	anchor:SetScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		local def = NL.db.bar.menuDefault[key]
 		GameTooltip:SetText(key:gsub("menu", " menu"))
+		GameTooltip:AddLine("Left: cast " .. tostring(NL:GetCastName(def) or def) ..
+			"  |  Right: open menu", 0.7, 0.7, 0.7)
 		GameTooltip:Show()
 	end)
 	anchor:SetScript("OnLeave", GameTooltip_Hide)
 
+	self:ConfigureMenuDefault(anchor)
 	self:LayoutMenu(anchor)
 	return anchor
+end
+
+-- Apply the menu's default-left-click ability: cast attrs + icon on the anchor.
+function NL:ConfigureMenuDefault(anchor)
+	if InCombatLockdown() or not anchor then return end
+	local key = anchor.menuKey
+	local usage = self.db.bar.menuDefault[key]
+	-- Fall back to the first known ability if the chosen default isn't valid.
+	if not usage or not self:IsKnown(usage) then
+		for _, u in ipairs(MENU_CONTENTS[key]) do
+			if self:IsKnown(u) then usage = u; break end
+		end
+	end
+	usage = usage or MENU_CONTENTS[key][1]
+	anchor.defaultUsage = usage
+	anchor:SetAttribute("type1", "spell")
+	anchor:SetAttribute("spell1", self:GetCastName(usage))
+	if SELF_CAST[usage] then
+		anchor:SetAttribute("unit", "player")
+	else
+		anchor:SetAttribute("unit", nil)
+	end
+	self:UpdateButtonAvailability(anchor, usage)
 end
 
 -- Lay out only the known spells in a menu, stacking away from the cluster.
@@ -513,9 +546,24 @@ function NL:RefreshButtons()
 		if self.stoneButtons[usage] then self:ConfigureStoneButton(self.stoneButtons[usage], usage) end
 	end
 	for _, key in ipairs({ "buffmenu", "petmenu" }) do
-		if self.barButtons[key] then self:LayoutMenu(self.barButtons[key]) end
+		if self.barButtons[key] then
+			self:ConfigureMenuDefault(self.barButtons[key])
+			self:LayoutMenu(self.barButtons[key])
+		end
 	end
 	if self.barButtons.mount then self:ConfigureSpellButton(self.barButtons.mount, "mounts") end
 	self:ConfigureSphere()
 	self:LayoutBar()
+end
+
+-- Called from options when a menu's default ability changes.
+function NL:SetMenuDefault(key, usage)
+	self.db.bar.menuDefault[key] = usage
+	if self.barButtons and self.barButtons[key] then
+		if InCombatLockdown() then
+			self.deferredRefresh = true
+		else
+			self:ConfigureMenuDefault(self.barButtons[key])
+		end
+	end
 end
