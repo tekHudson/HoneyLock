@@ -139,3 +139,16 @@ function NL:StartTimerTicker()
 		end
 	end, 0.1)
 end
+
+-- Remove all active timer bars and stop the ticker (e.g. when disabled).
+function NL:ClearTimers()
+	for i = #active, 1, -1 do
+		releaseBar(active[i].frame)
+		active[i] = nil
+	end
+	relayout()
+	if self.timerTicker then
+		self:CancelTimer(self.timerTicker)
+		self.timerTicker = nil
+	end
+end

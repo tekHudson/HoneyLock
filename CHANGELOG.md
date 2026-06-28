@@ -6,6 +6,11 @@ This project follows [Keep a Changelog](https://keepachangelog.com) and
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-06-28
+### Fixed
+- Unchecking the Timers option now removes any timer bars already on screen
+  (previously it only stopped new ones from appearing).
+
 ## [0.1.3] - 2026-06-26
 ### Fixed
 - Changing a menu's default ability now takes effect immediately instead of
@@ -52,7 +57,8 @@ This project follows [Keep a Changelog](https://keepachangelog.com) and
 - Native Blizzard options panel (`/hl`).
 - 100% Lua, no XML, stock spell icons (octagon-masked); minimal libraries.
 
-[Unreleased]: https://github.com/tekHudson/HoneyLock/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/tekHudson/HoneyLock/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/tekHudson/HoneyLock/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/tekHudson/HoneyLock/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/tekHudson/HoneyLock/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/tekHudson/HoneyLock/compare/v0.1.0...v0.1.1

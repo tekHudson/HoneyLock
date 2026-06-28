@@ -234,7 +234,7 @@ local function buildPanel()
 	header("Timers & alerts")
 	put(COL1, "Timers", "Show Soulstone / Banish / Enslave timers.",
 		function() return NL.db.timers.enabled end,
-		function(v) NL.db.timers.enabled = v end)
+		function(v) NL.db.timers.enabled = v; if not v then NL:ClearTimers() end end)
 	put(COL2, "Nightfall flash", "Flash when Shadow Trance procs.",
 		function() return NL.db.alerts.nightfall end,
 		function(v) NL.db.alerts.nightfall = v; if not v then NL:HideNightfall() end end)
