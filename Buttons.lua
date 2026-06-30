@@ -25,13 +25,12 @@ NL:RegisterDefaults({
 		layout = "honeycomb",    -- "honeycomb" (flower cluster) or "line"
 		show = {                 -- per-button visibility
 			sphere = true, soulstone = true, healthstone = true,
-			spellstone = false, firestone = false,
-			buffmenu = true, petmenu = true,
+			buffmenu = true, petmenu = true, utility = true,
 			mount = true, destroy = true,
 		},
 		mainSpell = "bolt",      -- left-click on sphere (Shadow Bolt)
 		-- left-click default for each flyout menu (right-click opens the flyout)
-		menuDefault = { buffmenu = "armor", petmenu = "imp" },
+		menuDefault = { buffmenu = "armor", petmenu = "imp", utility = "summoning" },
 	},
 })
 
@@ -43,34 +42,40 @@ NL.SpellIDs.bolt = NL.SpellIDs.bolt or { 686 }
 ------------------------------------------------------------------------
 
 local MENU_CONTENTS = {
-	buffmenu  = { "armor", "fel_armor", "breath", "invisible", "eye", "summoning", "link", "ward", "banish" },
+	-- true self-buffs only
+	buffmenu  = { "armor", "fel_armor", "breath", "invisible", "link", "ward" },
 	petmenu   = { "domination", "imp", "voidwalker", "succubus", "felhunter", "felguard", "inferno", "rit_of_doom", "enslave", "sacrifice" },
+	-- non-buff utility: rituals, scout, CC, and stone creation
+	utility   = { "summoning", "summon_portal", "eye", "banish", "spellstone", "firestone" },
+	-- Fastest first so the default falls back to the fastest mount you know.
+	mount     = { "dreadsteed", "felsteed" },
 }
 NL.MenuUsages = MENU_CONTENTS  -- exposed for the options panel
+
+local MENU_KEYS = { "buffmenu", "petmenu", "utility", "mount" }
 
 -- Self-cast usages get unit="player"; everything else uses normal targeting.
 local SELF_CAST = {
 	armor = true, fel_armor = true, link = true, ward = true, eye = true, invisible = true,
 }
 
-local STONES = { "soulstone", "healthstone", "spellstone", "firestone" }
+local STONES = { "soulstone", "healthstone" }
 
 -- Display order for the straight "line" layout.
 local BAR_ORDER = {
-	"sphere", "soulstone", "healthstone", "spellstone", "firestone",
-	"buffmenu", "petmenu", "mount", "destroy",
+	"sphere", "soulstone", "healthstone",
+	"buffmenu", "petmenu", "utility", "mount", "destroy",
 }
 
--- Honeycomb "flower": center + six satellites at compass angles (degrees,
+-- Honeycomb "flower": center + satellites at compass angles (degrees,
 -- measured CCW from +x). Flyout menus open away from the center.
 local CLUSTER = {
 	sphere     = { center = true },
 	buffmenu   = { angle = 135, dir = "up" },     -- top-left
-	spellstone = { angle =  90 },                 -- top      (off by default)
+	utility    = { angle =  90, dir = "up" },     -- top
 	petmenu    = { angle =  45, dir = "up" },     -- top-right
 	mount      = { angle =   0, dir = "right" },  -- right
 	destroy    = { angle = -45 },                 -- bottom-right
-	firestone  = { angle = 270 },                 -- bottom   (off by default)
 	soulstone  = { angle = 225 },                 -- bottom-left
 	healthstone= { angle = 180, dir = "left" },   -- left
 }
@@ -95,7 +100,9 @@ function NL:Debug()
 	dumpGroup("Stones", STONES)
 	dumpGroup("Buff menu", MENU_CONTENTS.buffmenu)
 	dumpGroup("Pet menu", MENU_CONTENTS.petmenu)
-	dumpGroup("Other", { "mounts", "bolt" })
+	dumpGroup("Utility menu", MENU_CONTENTS.utility)
+	dumpGroup("Mount menu", MENU_CONTENTS.mount)
+	dumpGroup("Other", { "bolt" })
 
 	add("")
 	add("Stone button attributes (type1/spell1/type2/spell2/item1/held):")
@@ -134,6 +141,17 @@ local function styleIcon(btn, texture)
 		ringMask:SetAllPoints(btn.ring)
 		ringMask:SetTexture(ICON_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
 		btn.ring:AddMaskTexture(ringMask)
+
+		-- Red alert border: a red octagon a few px larger, behind the icon.
+		btn.alert = btn:CreateTexture(nil, "BACKGROUND", nil, -2)
+		btn.alert:SetPoint("TOPLEFT", btn, "TOPLEFT", -3, 3)
+		btn.alert:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", 3, -3)
+		btn.alert:SetColorTexture(0.9, 0.1, 0.1, 1)
+		local alertMask = btn:CreateMaskTexture()
+		alertMask:SetAllPoints(btn.alert)
+		alertMask:SetTexture(ICON_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+		btn.alert:AddMaskTexture(alertMask)
+		btn.alert:Hide()
 
 		-- The icon itself, masked into a circle.
 		btn.icon = btn:CreateTexture(nil, "ARTWORK")
@@ -206,20 +224,21 @@ end
 
 function NL:ConfigureStoneButton(btn, usage)
 	if InCombatLockdown() then return end
-	local castName = self:GetCastName(usage)
 	-- right click always creates
 	btn:SetAttribute("type2", "spell")
-	btn:SetAttribute("spell2", castName)
-	-- left click: use item if we have one, else create
+	btn:SetAttribute("spell2", self:GetCastName(usage))
+	-- left click: use the held stone if we have one, otherwise do nothing
+	-- (creation is right-click only).
 	local itemID = btn.heldItemID
 	if itemID then
 		btn:SetAttribute("type1", "item")
 		btn:SetAttribute("item1", "item:" .. itemID)
 	else
-		btn:SetAttribute("type1", "spell")
-		btn:SetAttribute("spell1", castName)
+		btn:SetAttribute("type1", nil)
+		btn:SetAttribute("item1", nil)
 	end
 	self:UpdateButtonAvailability(btn, usage)
+	self:UpdateStoneReminders()
 end
 
 -- Called by Shards.lua after a bag scan: itemID or nil.
@@ -228,6 +247,38 @@ function NL:SetStoneItem(usage, itemID)
 	if not btn then return end
 	btn.heldItemID = itemID
 	self:ConfigureStoneButton(btn, usage)
+end
+
+-- Is one of our soul stones currently applied (Soulstone Resurrection buff)?
+function NL:IsSoulstoneActive()
+	local name = GetSpellInfo(20707)  -- "Soulstone Resurrection"
+	if not name or not AuraUtil or not AuraUtil.FindAuraByName then return false end
+	if AuraUtil.FindAuraByName(name, "player", "HELPFUL") then return true end
+	if IsInRaid() then
+		for i = 1, 40 do
+			local u = "raid" .. i
+			if UnitExists(u) and AuraUtil.FindAuraByName(name, u, "HELPFUL") then return true end
+		end
+	elseif IsInGroup() then
+		for i = 1, 4 do
+			local u = "party" .. i
+			if UnitExists(u) and AuraUtil.FindAuraByName(name, u, "HELPFUL") then return true end
+		end
+	end
+	return false
+end
+
+-- Red border reminders: Healthstone missing, or no active Soulstone.
+function NL:UpdateStoneReminders()
+	if not self.stoneButtons then return end
+	local hs = self.stoneButtons.healthstone
+	if hs and hs.alert then
+		hs.alert:SetShown(self:IsKnown("healthstone") and not hs.heldItemID)
+	end
+	local ss = self.stoneButtons.soulstone
+	if ss and ss.alert then
+		ss.alert:SetShown(self:IsKnown("soulstone") and not self:IsSoulstoneActive())
+	end
 end
 
 ------------------------------------------------------------------------
@@ -245,7 +296,8 @@ function NL:MakeMenu(name, parent, key, icon)
 	local flyout = CreateFrame("Frame", name .. "Flyout", anchor)
 	flyout:SetSize(size, size)
 	flyout:Hide()
-	anchor.dir = (CLUSTER[key] and CLUSTER[key].dir) or "down"
+	-- Flyout flows outward along the satellite's own cluster angle.
+	anchor.angle = (CLUSTER[key] and CLUSTER[key].angle) or 90
 
 	local entries = MENU_CONTENTS[key]
 	for _, usage in ipairs(entries) do
@@ -273,8 +325,8 @@ function NL:MakeMenu(name, parent, key, icon)
 
 	anchor:SetScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-		local def = NL.db.bar.menuDefault[key]
-		GameTooltip:SetText(key:gsub("menu", " menu"))
+		local def = self.defaultUsage or NL.db.bar.menuDefault[key]
+		GameTooltip:SetText((key:gsub("menu", " menu")):gsub("^%l", string.upper))
 		GameTooltip:AddLine("Left: cast " .. tostring(NL:GetCastName(def) or def) ..
 			"  |  Right: open menu", 0.7, 0.7, 0.7)
 		GameTooltip:Show()
@@ -309,55 +361,31 @@ function NL:ConfigureMenuDefault(anchor)
 	self:UpdateButtonAvailability(anchor, usage)
 end
 
--- Lay out only the known spells in a menu, stacking away from the cluster.
+-- Lay out the known spells in a menu, flowing outward along the cluster angle.
 function NL:LayoutMenu(anchor)
 	if InCombatLockdown() then return end
 	local size = self.db.bar.size
-	local spacing = self.db.bar.spacing
-	local step = size + spacing
-	local dir = anchor.dir or "down"
+	local step = size + self.db.bar.spacing
+	local rad = math.rad(anchor.angle or 90)
+	local vx, vy = math.cos(rad), math.sin(rad)   -- outward direction
 	local flyout = anchor.flyout
 
-	-- Anchor the flyout container relative to the menu button.
 	flyout:ClearAllPoints()
-	if dir == "up" then
-		flyout:SetPoint("BOTTOM", anchor, "TOP", 0, spacing)
-	elseif dir == "left" then
-		flyout:SetPoint("RIGHT", anchor, "LEFT", -spacing, 0)
-	elseif dir == "right" then
-		flyout:SetPoint("LEFT", anchor, "RIGHT", spacing, 0)
-	else
-		flyout:SetPoint("TOP", anchor, "BOTTOM", 0, -spacing)
-	end
+	flyout:SetPoint("CENTER", anchor, "CENTER", 0, 0)
+	flyout:SetSize(size, size)
 
-	local n = 0
+	local n = 1   -- first child sits one step outward from the menu button
 	for _, child in ipairs(flyout.children or {}) do
 		if self:IsKnown(child._usage) then
 			self:ConfigureSpellButton(child, child._usage)
 			child:SetSize(size, size)
 			child:ClearAllPoints()
-			local off = n * step
-			if dir == "up" then
-				child:SetPoint("BOTTOM", flyout, "BOTTOM", 0, off)
-			elseif dir == "left" then
-				child:SetPoint("RIGHT", flyout, "RIGHT", -off, 0)
-			elseif dir == "right" then
-				child:SetPoint("LEFT", flyout, "LEFT", off, 0)
-			else
-				child:SetPoint("TOP", flyout, "TOP", 0, -off)
-			end
+			child:SetPoint("CENTER", anchor, "CENTER", vx * step * n, vy * step * n)
 			child:Show()
 			n = n + 1
 		else
 			child:Hide()
 		end
-	end
-
-	local extent = math.max(size, n * step - spacing)
-	if dir == "left" or dir == "right" then
-		flyout:SetSize(extent, size)
-	else
-		flyout:SetSize(size, extent)
 	end
 end
 
@@ -429,10 +457,10 @@ function NL:BuildBar()
 	-- menus
 	self.barButtons.buffmenu  = self:MakeMenu("HoneyLockBuffMenu",  bar, "buffmenu",  "Interface\\Icons\\Spell_Shadow_RagingScream")
 	self.barButtons.petmenu   = self:MakeMenu("HoneyLockPetMenu",   bar, "petmenu",   "Interface\\Icons\\Spell_Shadow_SummonFelHunter")
+	self.barButtons.utility   = self:MakeMenu("HoneyLockUtilityMenu", bar, "utility", "Interface\\Icons\\Spell_Shadow_Twilight")
 
-	-- mount
-	local mount = self:MakeSpellButton("HoneyLockMount", bar, "mounts")
-	self.barButtons.mount = mount
+	-- mount flyout: Felsteed / Dreadsteed, default = fastest known
+	self.barButtons.mount = self:MakeMenu("HoneyLockMount", bar, "mount", "Interface\\Icons\\Spell_Nature_Swiftness")
 
 	-- destroy shards (non-secure action)
 	local destroy = CreateFrame("Button", "HoneyLockDestroy", bar)
@@ -470,7 +498,7 @@ function NL:LayoutBar()
 		self:LayoutHoneycomb()
 	end
 	-- relayout menus in case sizes/positions changed
-	for _, key in ipairs({ "buffmenu", "petmenu" }) do
+	for _, key in ipairs(MENU_KEYS) do
 		if self.barButtons[key] then self:LayoutMenu(self.barButtons[key]) end
 	end
 end
@@ -545,13 +573,12 @@ function NL:RefreshButtons()
 	for _, usage in ipairs(STONES) do
 		if self.stoneButtons[usage] then self:ConfigureStoneButton(self.stoneButtons[usage], usage) end
 	end
-	for _, key in ipairs({ "buffmenu", "petmenu" }) do
+	for _, key in ipairs(MENU_KEYS) do
 		if self.barButtons[key] then
 			self:ConfigureMenuDefault(self.barButtons[key])
 			self:LayoutMenu(self.barButtons[key])
 		end
 	end
-	if self.barButtons.mount then self:ConfigureSpellButton(self.barButtons.mount, "mounts") end
 	self:ConfigureSphere()
 	self:LayoutBar()
 end

@@ -184,14 +184,13 @@ local function buildPanel()
 	nextRow()
 
 	header("Buttons")
-	put(COL1, "Spellstone", "Show the Spellstone button (top).", showGet("spellstone"), showSet("spellstone"))
-	put(COL2, "Firestone", "Show the Firestone button (bottom).", showGet("firestone"), showSet("firestone"))
-	nextRow()
 	put(COL1, "Buff menu", nil, showGet("buffmenu"), showSet("buffmenu"))
 	put(COL2, "Pet menu", nil, showGet("petmenu"), showSet("petmenu"))
 	nextRow()
-	put(COL1, "Mount", nil, showGet("mount"), showSet("mount"))
-	put(COL2, "Destroy-shards", nil, showGet("destroy"), showSet("destroy"))
+	put(COL1, "Utility menu", "Rituals, Eye, Banish, stone creation.", showGet("utility"), showSet("utility"))
+	put(COL2, "Mount", nil, showGet("mount"), showSet("mount"))
+	nextRow()
+	put(COL1, "Destroy-shards", nil, showGet("destroy"), showSet("destroy"))
 	nextRow()
 
 	header("Menu defaults (left-click cast)")
@@ -210,6 +209,11 @@ local function buildPanel()
 		function() return NL.db.bar.menuDefault.petmenu end,
 		function(v) NL:SetMenuDefault("petmenu", v) end)
 	petDD:PlaceAt(COL2 - 4, y)
+	y = y - 52
+	local utilDD = newDropdown(panel, "Utility menu", menuChoices("utility"),
+		function() return NL.db.bar.menuDefault.utility end,
+		function(v) NL:SetMenuDefault("utility", v) end)
+	utilDD:PlaceAt(COL1 - 4, y)
 	y = y - 48
 
 	header("Soul shards")

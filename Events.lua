@@ -35,6 +35,17 @@ local function requestBagScan()
 	end)
 end
 
+-- Throttle the Soulstone-buff reminder scan (UNIT_AURA fires in bursts).
+local reminderDirty = false
+function NL:RequestStoneReminderUpdate()
+	if reminderDirty then return end
+	reminderDirty = true
+	C_Timer.After(0.5, function()
+		reminderDirty = false
+		if NL.UpdateStoneReminders then NL:UpdateStoneReminders() end
+	end)
+end
+
 ------------------------------------------------------------------------
 -- Init
 ------------------------------------------------------------------------
@@ -80,7 +91,9 @@ function NL:InitEvents()
 	-- Nightfall via aura changes on the player
 	self:RegisterEvent("UNIT_AURA", function(_, unit)
 		if unit == "player" then self:CheckNightfall() end
+		self:RequestStoneReminderUpdate()
 	end)
+	self:RegisterEvent("GROUP_ROSTER_UPDATE", function() self:RequestStoneReminderUpdate() end)
 
 	-- Cast-based timers
 	self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED", function(_, unit, _, spellID)

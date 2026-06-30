@@ -6,6 +6,25 @@ This project follows [Keep a Changelog](https://keepachangelog.com) and
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-06-29
+### Added
+- Mount is now a flyout: Felsteed (60%) and Dreadsteed (100%); left-click
+  casts the fastest you know, right-click opens the picker.
+- New Utility flyout for non-buff abilities: Ritual of Summoning, Portal of
+  Summoning, Eye of Kilrogg, Banish, plus Create Spellstone / Firestone.
+- Portal of Summoning (Season of Discovery) is now supported.
+- Red border reminders on the stone buttons: Healthstone when you're missing
+  one, Soulstone when none is currently applied to you or a group member.
+### Changed
+- Buff menu now contains only true self-buffs (armor, breath, invisibility,
+  soul link, shadow ward).
+- Flyout menus open outward along each satellite's own angle (Buff up-left,
+  Pet up-right, Utility up, Mount right).
+- Stone buttons: left-click only *uses* a held stone; creation is right-click
+  only (no accidental creates).
+- Standalone Spellstone/Firestone bar buttons removed (their create actions
+  live in the Utility menu).
+
 ## [0.1.4] - 2026-06-28
 ### Fixed
 - Unchecking the Timers option now removes any timer bars already on screen
@@ -57,7 +76,8 @@ This project follows [Keep a Changelog](https://keepachangelog.com) and
 - Native Blizzard options panel (`/hl`).
 - 100% Lua, no XML, stock spell icons (octagon-masked); minimal libraries.
 
-[Unreleased]: https://github.com/tekHudson/HoneyLock/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/tekHudson/HoneyLock/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/tekHudson/HoneyLock/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/tekHudson/HoneyLock/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/tekHudson/HoneyLock/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/tekHudson/HoneyLock/compare/v0.1.1...v0.1.2

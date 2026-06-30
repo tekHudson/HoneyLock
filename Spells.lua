@@ -34,7 +34,9 @@ NL.SpellIDs = {
 	sacrifice   = { 18788 },                 -- Demonic Sacrifice (talent)
 
 	-- Mounts
-	mounts      = { 5784, 23161 },           -- Felsteed, Dreadsteed
+	mounts      = { 5784, 23161 },           -- Felsteed, Dreadsteed (highest known)
+	felsteed    = { 5784 },                  -- 60% mount
+	dreadsteed  = { 23161 },                 -- 100% mount
 
 	-- Buffs / utility
 	armor       = { 687, 696, 706, 1086, 11733, 11734, 11735, 27260, 47793, 47889 }, -- Demon Skin/Armor
@@ -43,6 +45,7 @@ NL.SpellIDs = {
 	invisible   = { 132, 2970, 11743 },      -- Detect Invisibility
 	eye         = { 126 },                   -- Eye of Kilrogg
 	summoning   = { 698 },                   -- Ritual of Summoning
+	summon_portal = { 437169 },              -- Portal of Summoning (SoD)
 	link        = { 19028 },                 -- Soul Link (talent)
 	ward        = { 6229, 11739, 11740, 28610, 47890, 47891 }, -- Shadow Ward
 	banish      = { 710, 18647 },

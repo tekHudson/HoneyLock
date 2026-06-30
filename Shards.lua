@@ -79,12 +79,12 @@ function NL:ScanBags()
 	self.shardCount = shardCount
 	self.shardSlots = shardSlots
 
-	-- update stone buttons with held items
-	for usage in pairs(foundStone) do
-		self:SetStoneItem(usage, foundStone[usage])
-	end
+	-- Update the stone buttons (nil clears a held stone that was consumed).
+	self:SetStoneItem("soulstone", foundStone.soulstone)
+	self:SetStoneItem("healthstone", foundStone.healthstone)
 
 	self:UpdateShardDisplay()
+	if self.UpdateStoneReminders then self:UpdateStoneReminders() end
 	return shardCount
 end
 
