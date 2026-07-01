@@ -26,7 +26,7 @@ NL:RegisterDefaults({
 		show = {                 -- per-button visibility
 			sphere = true, soulstone = true, healthstone = true,
 			buffmenu = true, petmenu = true, utility = true,
-			mount = true, destroy = true,
+			mount = true,
 		},
 		mainSpell = "bolt",      -- left-click on sphere (Shadow Bolt)
 		-- left-click default for each flyout menu (right-click opens the flyout)
@@ -64,7 +64,7 @@ local STONES = { "soulstone", "healthstone" }
 -- Display order for the straight "line" layout.
 local BAR_ORDER = {
 	"sphere", "soulstone", "healthstone",
-	"buffmenu", "petmenu", "utility", "mount", "destroy",
+	"buffmenu", "petmenu", "utility", "mount",
 }
 
 -- Honeycomb "flower": center + satellites at compass angles (degrees,
@@ -75,7 +75,6 @@ local CLUSTER = {
 	utility    = { angle =  90, dir = "up" },     -- top
 	petmenu    = { angle =  45, dir = "up" },     -- top-right
 	mount      = { angle =   0, dir = "right" },  -- right
-	destroy    = { angle = -45 },                 -- bottom-right
 	soulstone  = { angle = 225 },                 -- bottom-left
 	healthstone= { angle = 180, dir = "left" },   -- left
 }
@@ -461,18 +460,6 @@ function NL:BuildBar()
 
 	-- mount flyout: Felsteed / Dreadsteed, default = fastest known
 	self.barButtons.mount = self:MakeMenu("HoneyLockMount", bar, "mount", "Interface\\Icons\\Spell_Nature_Swiftness")
-
-	-- destroy shards (non-secure action)
-	local destroy = CreateFrame("Button", "HoneyLockDestroy", bar)
-	styleIcon(destroy, "Interface\\Icons\\INV_Misc_Gem_Amethyst_02")
-	destroy:SetScript("OnClick", function() NL:DestroyShards() end)
-	destroy:SetScript("OnEnter", function(self)
-		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-		GameTooltip:SetText("Destroy soul shards over limit (" .. tostring(NL.db.shards.keep) .. ")")
-		GameTooltip:Show()
-	end)
-	destroy:SetScript("OnLeave", GameTooltip_Hide)
-	self.barButtons.destroy = destroy
 
 	-- sphere is a logo/handle only (drag + right-click options), no cast
 	self:ConfigureSphere()

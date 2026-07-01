@@ -190,8 +190,6 @@ local function buildPanel()
 	put(COL1, "Utility menu", "Rituals, Eye, Banish, stone creation.", showGet("utility"), showSet("utility"))
 	put(COL2, "Mount", nil, showGet("mount"), showSet("mount"))
 	nextRow()
-	put(COL1, "Destroy-shards", nil, showGet("destroy"), showSet("destroy"))
-	nextRow()
 
 	header("Menu defaults (left-click cast)")
 	local function menuChoices(key)
@@ -223,6 +221,14 @@ local function buildPanel()
 	put(COL2, "Auto-organize", "Move loose shards into a soul bag.",
 		function() return NL.db.shards.organize end,
 		function(v) NL.db.shards.organize = v end)
+	nextRow()
+	put(COL1, "Show shard limit", "Show count as current/limit and warn when over.",
+		function() return NL.db.shards.autoDestroy end,
+		function(v) NL.db.shards.autoDestroy = v; NL:UpdateShardDisplay() end)
+	local keepBox = newIntBox(panel, "Limit", 0, 999,
+		function() return NL.db.shards.keep end,
+		function(v) NL.db.shards.keep = v; NL:UpdateShardDisplay() end)
+	keepBox:PlaceAt(COL2, y + 2)
 	nextRow()
 	-- counter font (dropdown) + size (integer)
 	local fontDD = newDropdown(panel, "Counter font", FONT_CHOICES,

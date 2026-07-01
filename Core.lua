@@ -57,6 +57,9 @@ function NL:OnInitialize()
 		if msg == "debug" then
 			NL:RefreshKnownSpells()
 			NL:Debug()
+		elseif msg == "destroy" then
+			NL:ScanBags()
+			NL:DestroyShards(false)
 		elseif NL.OpenOptions then
 			NL:OpenOptions()
 		else

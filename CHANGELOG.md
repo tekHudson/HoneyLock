@@ -6,6 +6,16 @@ This project follows [Keep a Changelog](https://keepachangelog.com) and
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-07-01
+### Changed
+- Reworked shard destroying. The standalone Destroy-shards button is gone; the
+  **shard counter is now clickable** and destroys one over-limit shard per
+  click. Enable **Show shard limit** to display `current/limit` and turn the
+  counter red when over. `/hl destroy` does the same from chat.
+### Removed
+- Automatic shard destruction is not possible on this client: `DeleteCursorItem`
+  is protected and requires a hardware event, so deletion is one-per-click only.
+
 ## [0.1.5] - 2026-06-29
 ### Added
 - Mount is now a flyout: Felsteed (60%) and Dreadsteed (100%); left-click
@@ -76,7 +86,8 @@ This project follows [Keep a Changelog](https://keepachangelog.com) and
 - Native Blizzard options panel (`/hl`).
 - 100% Lua, no XML, stock spell icons (octagon-masked); minimal libraries.
 
-[Unreleased]: https://github.com/tekHudson/HoneyLock/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/tekHudson/HoneyLock/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/tekHudson/HoneyLock/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/tekHudson/HoneyLock/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/tekHudson/HoneyLock/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/tekHudson/HoneyLock/compare/v0.1.2...v0.1.3

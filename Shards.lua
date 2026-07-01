@@ -14,6 +14,7 @@ NL:RegisterDefaults({
 		font = "Fonts\\FRIZQT__.TTF",  -- counter font face
 		fontSize = 16,                 -- counter font size
 		keep = 28,          -- destroy shards above this many
+		autoDestroy = false,-- automatically destroy shards above `keep`
 		organize = false,   -- move shards into the designated bag
 		bagSlot = nil,      -- container index to keep shards in (nil = auto)
 	},
@@ -69,7 +70,7 @@ function NL:ScanBags()
 			local id, count = slotItemID(bag, slot)
 			if id == SOUL_SHARD_ID then
 				shardCount = shardCount + (count or 1)
-				table.insert(shardSlots, { bag = bag, slot = slot })
+				table.insert(shardSlots, { bag = bag, slot = slot, count = count or 1 })
 			elseif id and STONE_ITEMS[id] then
 				foundStone[STONE_ITEMS[id]] = id
 			end
@@ -96,22 +97,48 @@ function NL:UpdateShardDisplay()
 	local sphere = self.barButtons and self.barButtons.sphere
 	if not sphere then return end
 	local s = self.db.shards
-	if not sphere.shardText then
-		local fs = sphere:CreateFontString(nil, "OVERLAY")
+
+	-- The counter is a clickable button below the logo: clicking it destroys one
+	-- over-limit shard (one per click, since deletion needs a hardware event).
+	if not sphere.shardButton then
+		local b = CreateFrame("Button", nil, sphere)
+		b:RegisterForClicks("AnyUp")
+		b:SetPoint("TOP", sphere, "BOTTOM", 0, -1)
+		local fs = b:CreateFontString(nil, "OVERLAY")
+		fs:SetPoint("CENTER")
 		fs:SetShadowColor(0, 0, 0, 1)
 		fs:SetShadowOffset(1, -1)
-		sphere.shardText = fs
+		b.text = fs
+		b:SetScript("OnClick", function() NL:DestroyShards(true) end)
+		b:SetScript("OnEnter", function(self2)
+			GameTooltip:SetOwner(self2, "ANCHOR_RIGHT")
+			GameTooltip:SetText("Soul shards: " .. tostring(NL.shardCount or 0))
+			GameTooltip:AddLine("Click to destroy one shard over your limit ("
+				.. tostring(NL.db.shards.keep) .. ").", 0.7, 0.7, 0.7)
+			GameTooltip:Show()
+		end)
+		b:SetScript("OnLeave", GameTooltip_Hide)
+		sphere.shardButton = b
 	end
-	local fs = sphere.shardText
-	-- Bottom-center, just below the logo (outside it).
-	fs:ClearAllPoints()
-	fs:SetPoint("TOP", sphere, "BOTTOM", 0, -1)
+
+	local b = sphere.shardButton
+	local fs = b.text
 	fs:SetFont(s.font or "Fonts\\FRIZQT__.TTF", s.fontSize or 16, "OUTLINE")
 	if s.showCounter and self.shardCount then
-		fs:SetText(self.shardCount)
-		fs:Show()
+		-- When the limit display is on, show current/limit and warn (red) if over.
+		if s.autoDestroy then
+			fs:SetText(self.shardCount .. "/" .. (s.keep or 0))
+			fs:SetTextColor(self.shardCount > (s.keep or 0) and 1 or 1,
+				self.shardCount > (s.keep or 0) and 0.2 or 1,
+				self.shardCount > (s.keep or 0) and 0.2 or 1)
+		else
+			fs:SetText(self.shardCount)
+			fs:SetTextColor(1, 1, 1)
+		end
+		b:SetSize(math.max(16, fs:GetStringWidth() + 8), (s.fontSize or 16) + 6)
+		b:Show()
 	else
-		fs:Hide()
+		b:Hide()
 	end
 end
 
@@ -173,29 +200,31 @@ function NL:OrganizeShards()
 	organizing = false
 end
 
-function NL:DestroyShards()
+-- Destroy ONE soul shard above the keep-limit. DeleteCursorItem is protected
+-- on 1.15.5 and must be called in response to a hardware event (a real click /
+-- keypress), and only once per event -- so this can only run one delete per
+-- user action, and never automatically.
+function NL:DestroyShards(silent)
 	if InCombatLockdown() then
-		self:Print("Can't destroy shards in combat.")
+		if not silent then self:Print("Can't destroy shards in combat.") end
 		return
 	end
 	self:ScanBags()
 	local keep = self.db.shards.keep or 28
 	local over = (self.shardCount or 0) - keep
 	if over <= 0 then
-		self:Print(("No shards to destroy (have %d, keep %d)."):format(self.shardCount or 0, keep))
+		if not silent then
+			self:Print(("No shards to destroy (have %d, keep %d)."):format(self.shardCount or 0, keep))
+		end
 		return
 	end
-	-- Delete from the end of the list first.
-	local destroyed = 0
-	for i = #self.shardSlots, 1, -1 do
-		if destroyed >= over then break end
-		local s = self.shardSlots[i]
-		if PickupItem then
-			PickupItem(s.bag, s.slot)
+	local s = self.shardSlots[#self.shardSlots]
+	if s and PickupItem then
+		ClearCursor()
+		PickupItem(s.bag, s.slot)
+		if CursorHasItem() then
 			DeleteCursorItem()
-			destroyed = destroyed + 1
 		end
+		ClearCursor()
 	end
-	self:Print(("Destroyed %d soul shard(s)."):format(destroyed))
-	C_Timer.After(0.2, function() NL:ScanBags() end)
 end

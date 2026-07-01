@@ -32,6 +32,8 @@ local function requestBagScan()
 		if NL.db.shards.organize and NL.OrganizeShards then
 			NL:OrganizeShards()
 		end
+		-- Note: shards can't be auto-destroyed — DeleteCursorItem is protected
+		-- and requires a hardware event (see NL:DestroyShards).
 	end)
 end
 
