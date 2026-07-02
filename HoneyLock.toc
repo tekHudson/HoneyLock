@@ -2,7 +2,7 @@
 ## Title: HoneyLock
 ## Notes: Lightweight warlock helper for Season of Discovery
 ## Author: Tek
-## Version: 0.1.6
+## Version: 0.1.7
 ## SavedVariables: HoneyLockDB
 ## X-Curse-Project-ID: 1583784
 
@@ -20,5 +20,6 @@ Buttons.lua
 Shards.lua
 Timers.lua
 Alerts.lua
+DemonForm.lua
 Options.lua
 Events.lua

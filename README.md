@@ -48,6 +48,9 @@ know are greyed out. Set each menu's default in the options panel.
 
 - **Timers** for Soulstone, Banish, and Enslave.
 - **Nightfall (Shadow Trance)** proc alert with optional sound.
+- **Drop demon form at a flight master** — when a taxi is refused because you're
+  in Metamorphosis, HoneyLock runs `/cancelform` so the next click starts your
+  flight (toggle in options; method credit: the LetMeTaxi addon).
 - Native Blizzard **options panel**, including counter font/size.
 
 ## Commands

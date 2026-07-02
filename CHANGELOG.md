@@ -6,6 +6,13 @@ This project follows [Keep a Changelog](https://keepachangelog.com) and
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-07-02
+### Added
+- Automatically drop SoD demon form (Metamorphosis) at a flight master: when a
+  taxi is refused because you're shapeshifted, HoneyLock runs `/cancelform` so
+  the next click starts the flight. Toggle in options (Season of Discovery).
+  Method credit: the LetMeTaxi addon.
+
 ## [0.1.6] - 2026-07-01
 ### Changed
 - Reworked shard destroying. The standalone Destroy-shards button is gone; the
@@ -86,7 +93,8 @@ This project follows [Keep a Changelog](https://keepachangelog.com) and
 - Native Blizzard options panel (`/hl`).
 - 100% Lua, no XML, stock spell icons (octagon-masked); minimal libraries.
 
-[Unreleased]: https://github.com/tekHudson/HoneyLock/compare/v0.1.6...HEAD
+[Unreleased]: https://github.com/tekHudson/HoneyLock/compare/v0.1.7...HEAD
+[0.1.7]: https://github.com/tekHudson/HoneyLock/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/tekHudson/HoneyLock/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/tekHudson/HoneyLock/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/tekHudson/HoneyLock/compare/v0.1.3...v0.1.4

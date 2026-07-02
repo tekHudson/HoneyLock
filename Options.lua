@@ -254,6 +254,12 @@ local function buildPanel()
 		function(v) NL.db.alerts.sound = v end)
 	nextRow()
 
+	header("Season of Discovery")
+	put(COL1, "Drop demon form at flight master", "Cancel Metamorphosis when a flight path is refused due to form.",
+		function() return NL.db.demonForm.dropAtFlightMaster end,
+		function(v) NL.db.demonForm.dropAtFlightMaster = v end)
+	nextRow()
+
 	header("Display")
 	y = y - 18
 	local scale = newSlider(panel, "Bar scale", 0.5, 2.0, 0.05,
