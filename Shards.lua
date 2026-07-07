@@ -3,12 +3,12 @@
 
 	The bag scan does double duty: it counts soul shards (#11) and detects
 	which stones you're holding so the stone buttons can "use" them on
-	left-click (feeds Buttons.lua via NL:SetStoneItem).
+	left-click (feeds Buttons.lua via HL:SetStoneItem).
 ]]
 
-local NL = _G.HoneyLock
+local HL = _G.HoneyLock
 
-NL:RegisterDefaults({
+HL:RegisterDefaults({
 	shards = {
 		showCounter = true,
 		font = "Fonts\\FRIZQT__.TTF",  -- counter font face
@@ -59,7 +59,7 @@ end
 -- Scanning
 ------------------------------------------------------------------------
 
-function NL:ScanBags()
+function HL:ScanBags()
 	local shardCount = 0
 	local foundStone = { healthstone = nil, soulstone = nil, spellstone = nil, firestone = nil }
 	local shardSlots = {}
@@ -93,7 +93,7 @@ end
 -- Counter display (text on the sphere button; no custom textures)
 ------------------------------------------------------------------------
 
-function NL:UpdateShardDisplay()
+function HL:UpdateShardDisplay()
 	local sphere = self.barButtons and self.barButtons.sphere
 	if not sphere then return end
 	local s = self.db.shards
@@ -109,12 +109,12 @@ function NL:UpdateShardDisplay()
 		fs:SetShadowColor(0, 0, 0, 1)
 		fs:SetShadowOffset(1, -1)
 		b.text = fs
-		b:SetScript("OnClick", function() NL:DestroyShards(true) end)
+		b:SetScript("OnClick", function() HL:DestroyShards(true) end)
 		b:SetScript("OnEnter", function(self2)
 			GameTooltip:SetOwner(self2, "ANCHOR_RIGHT")
-			GameTooltip:SetText("Soul shards: " .. tostring(NL.shardCount or 0))
+			GameTooltip:SetText("Soul shards: " .. tostring(HL.shardCount or 0))
 			GameTooltip:AddLine("Click to destroy one shard over your limit ("
-				.. tostring(NL.db.shards.keep) .. ").", 0.7, 0.7, 0.7)
+				.. tostring(HL.db.shards.keep) .. ").", 0.7, 0.7, 0.7)
 			GameTooltip:Show()
 		end)
 		b:SetScript("OnLeave", GameTooltip_Hide)
@@ -154,7 +154,7 @@ local SOUL_BAG_FAMILY = 4   -- bag family bit for soul-shard bags
 local GetFreeSlots = Container.GetContainerNumFreeSlots or _G.GetContainerNumFreeSlots
 
 local organizing = false
-function NL:OrganizeShards()
+function HL:OrganizeShards()
 	if InCombatLockdown() or organizing then return end
 	-- find soul bags (family includes the soul-shard bit) and their free slots
 	local soulBags = {}
@@ -204,7 +204,7 @@ end
 -- on 1.15.5 and must be called in response to a hardware event (a real click /
 -- keypress), and only once per event -- so this can only run one delete per
 -- user action, and never automatically.
-function NL:DestroyShards(silent)
+function HL:DestroyShards(silent)
 	if InCombatLockdown() then
 		if not silent then self:Print("Can't destroy shards in combat.") end
 		return

@@ -11,9 +11,30 @@
 	so they work in combat.
 ]]
 
-local NL = _G.HoneyLock
+local HL = _G.HoneyLock
 
-NL:RegisterDefaults({
+-- Label for Bindings.xml (auto-loaded by the client; never list it in the
+-- .toc). Must be set by the time Bindings.xml is parsed, which for a normal
+-- addon happens after its .toc-listed files finish loading -- so setting
+-- this here, in a regular toc-listed file, is early enough.
+--
+-- The binding's name is "CLICK HoneyLockMount:LeftButton" (a built-in
+-- convention: the binding engine synthesizes a real click on that named
+-- frame -- PreClick/PostClick and secure attributes all fire exactly like a
+-- mouse click, so the demon-form drop in the button's PreClick still runs).
+-- Spaces/colons aren't valid in a bare Lua identifier, so the BINDING_NAME_*
+-- global must be set via _G[...] table indexing instead of `local`/plain
+-- assignment.
+--
+-- No header attribute/global: with only one binding there's nothing to
+-- group, and Bindings.xml's `header` sub-row (verified via Blizzard's own
+-- Blizzard_BindingUI.lua) never picked up our BINDING_HEADER_* global on
+-- this client even though /dump confirmed it was set correctly -- a
+-- platform quirk, not fixable from our side. Omitting `header` avoids that
+-- row entirely; the binding still lands in the default "Other" category.
+_G["BINDING_NAME_CLICK HoneyLockMount:LeftButton"] = "Summon mount (Felsteed/Dreadsteed)"
+
+HL:RegisterDefaults({
 	bar = {
 		shown = true,
 		locked = false,
@@ -35,7 +56,7 @@ NL:RegisterDefaults({
 })
 
 -- Bolt isn't in Spells.lua's button data; add the base id for the sphere.
-NL.SpellIDs.bolt = NL.SpellIDs.bolt or { 686 }
+HL.SpellIDs.bolt = HL.SpellIDs.bolt or { 686 }
 
 ------------------------------------------------------------------------
 -- Menu contents and per-usage cast target
@@ -50,7 +71,7 @@ local MENU_CONTENTS = {
 	-- Fastest first so the default falls back to the fastest mount you know.
 	mount     = { "dreadsteed", "felsteed" },
 }
-NL.MenuUsages = MENU_CONTENTS  -- exposed for the options panel
+HL.MenuUsages = MENU_CONTENTS  -- exposed for the options panel
 
 local MENU_KEYS = { "buffmenu", "petmenu", "utility", "mount" }
 
@@ -80,7 +101,7 @@ local CLUSTER = {
 }
 
 -- Diagnostics: /hl debug  (output goes to a copy-friendly window)
-function NL:Debug()
+function HL:Debug()
 	local lines = {}
 	local function add(s) lines[#lines + 1] = s end
 	add("=== HoneyLock v" .. tostring(self.version) .. " debug ===")
@@ -177,14 +198,14 @@ local function styleIcon(btn, texture)
 end
 
 -- Create a 'spell' secure button for a usage.
-function NL:MakeSpellButton(name, parent, usage)
+function HL:MakeSpellButton(name, parent, usage)
 	local btn = CreateFrame("Button", name, parent, "SecureActionButtonTemplate")
 	btn:RegisterForClicks("AnyUp")
 	btn.usage = usage
 	styleIcon(btn, self:GetIcon(usage))
 	btn:SetScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-		local id = NL:HighestKnownID(usage) or (NL.SpellIDs[usage] and NL.SpellIDs[usage][1])
+		local id = HL:HighestKnownID(usage) or (HL.SpellIDs[usage] and HL.SpellIDs[usage][1])
 		if id then GameTooltip:SetSpellByID(id) else GameTooltip:SetText(usage) end
 		GameTooltip:Show()
 	end)
@@ -194,7 +215,7 @@ function NL:MakeSpellButton(name, parent, usage)
 end
 
 -- (Re)apply secure cast attributes; only safe out of combat.
-function NL:ConfigureSpellButton(btn, usage)
+function HL:ConfigureSpellButton(btn, usage)
 	if InCombatLockdown() then return end
 	local castName = self:GetCastName(usage)
 	btn:SetAttribute("type", "spell")
@@ -208,7 +229,7 @@ function NL:ConfigureSpellButton(btn, usage)
 end
 
 -- Grey out (desaturate + dim) a button when its spell isn't currently known.
-function NL:UpdateButtonAvailability(btn, usage)
+function HL:UpdateButtonAvailability(btn, usage)
 	if not btn.icon then return end
 	btn.icon:SetTexture(self:GetIcon(usage))
 	local known = self:IsKnown(usage)
@@ -221,7 +242,7 @@ end
 -- Stone buttons: left = use item if held, else create; right = create
 ------------------------------------------------------------------------
 
-function NL:ConfigureStoneButton(btn, usage)
+function HL:ConfigureStoneButton(btn, usage)
 	if InCombatLockdown() then return end
 	-- right click always creates
 	btn:SetAttribute("type2", "spell")
@@ -241,7 +262,7 @@ function NL:ConfigureStoneButton(btn, usage)
 end
 
 -- Called by Shards.lua after a bag scan: itemID or nil.
-function NL:SetStoneItem(usage, itemID)
+function HL:SetStoneItem(usage, itemID)
 	local btn = self.stoneButtons and self.stoneButtons[usage]
 	if not btn then return end
 	btn.heldItemID = itemID
@@ -249,7 +270,7 @@ function NL:SetStoneItem(usage, itemID)
 end
 
 -- Is one of our soul stones currently applied (Soulstone Resurrection buff)?
-function NL:IsSoulstoneActive()
+function HL:IsSoulstoneActive()
 	local name = GetSpellInfo(20707)  -- "Soulstone Resurrection"
 	if not name or not AuraUtil or not AuraUtil.FindAuraByName then return false end
 	if AuraUtil.FindAuraByName(name, "player", "HELPFUL") then return true end
@@ -268,7 +289,7 @@ function NL:IsSoulstoneActive()
 end
 
 -- Red border reminders: Healthstone missing, or no active Soulstone.
-function NL:UpdateStoneReminders()
+function HL:UpdateStoneReminders()
 	if not self.stoneButtons then return end
 	local hs = self.stoneButtons.healthstone
 	if hs and hs.alert then
@@ -284,7 +305,7 @@ end
 -- Flyout menus (combat-safe via SecureHandlerClickTemplate)
 ------------------------------------------------------------------------
 
-function NL:MakeMenu(name, parent, key, icon)
+function HL:MakeMenu(name, parent, key, icon)
 	-- Left-click casts the menu's default ability; right-click opens the flyout.
 	local anchor = CreateFrame("Button", name, parent, "SecureActionButtonTemplate")
 	anchor:RegisterForClicks("AnyUp")
@@ -304,6 +325,10 @@ function NL:MakeMenu(name, parent, key, icon)
 		child:SetSize(size, size)
 		child:Hide()
 		child._usage = usage
+		if key == "mount" then
+			-- Drop Metamorphosis first so the mount actually goes through.
+			child:SetScript("PreClick", function() HL:DropDemonFormForMount() end)
+		end
 		-- Collapse the flyout after the ability is clicked (out of combat).
 		child:SetScript("PostClick", function()
 			if not InCombatLockdown() then flyout:Hide() end
@@ -315,6 +340,13 @@ function NL:MakeMenu(name, parent, key, icon)
 	anchor.flyout = flyout
 	anchor.menuKey = key
 
+	if key == "mount" then
+		-- Left-click casts the default mount; drop form before it fires.
+		anchor:SetScript("PreClick", function(_, button)
+			if button == "LeftButton" then HL:DropDemonFormForMount() end
+		end)
+	end
+
 	-- Right-click toggles the flyout (out of combat); left-click casts default.
 	anchor:SetScript("PostClick", function(self, button)
 		if button == "RightButton" and not InCombatLockdown() then
@@ -324,9 +356,9 @@ function NL:MakeMenu(name, parent, key, icon)
 
 	anchor:SetScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-		local def = self.defaultUsage or NL.db.bar.menuDefault[key]
+		local def = self.defaultUsage or HL.db.bar.menuDefault[key]
 		GameTooltip:SetText((key:gsub("menu", " menu")):gsub("^%l", string.upper))
-		GameTooltip:AddLine("Left: cast " .. tostring(NL:GetCastName(def) or def) ..
+		GameTooltip:AddLine("Left: cast " .. tostring(HL:GetCastName(def) or def) ..
 			"  |  Right: open menu", 0.7, 0.7, 0.7)
 		GameTooltip:Show()
 	end)
@@ -338,7 +370,7 @@ function NL:MakeMenu(name, parent, key, icon)
 end
 
 -- Apply the menu's default-left-click ability: cast attrs + icon on the anchor.
-function NL:ConfigureMenuDefault(anchor)
+function HL:ConfigureMenuDefault(anchor)
 	if InCombatLockdown() or not anchor then return end
 	local key = anchor.menuKey
 	local usage = self.db.bar.menuDefault[key]
@@ -361,7 +393,7 @@ function NL:ConfigureMenuDefault(anchor)
 end
 
 -- Lay out the known spells in a menu, flowing outward along the cluster angle.
-function NL:LayoutMenu(anchor)
+function HL:LayoutMenu(anchor)
 	if InCombatLockdown() then return end
 	local size = self.db.bar.size
 	local step = size + self.db.bar.spacing
@@ -392,7 +424,7 @@ end
 -- Build the whole bar
 ------------------------------------------------------------------------
 
-function NL:BuildBar()
+function HL:BuildBar()
 	if self.bar then return end
 	if InCombatLockdown() then return end
 
@@ -413,12 +445,12 @@ function NL:BuildBar()
 	sphere:RegisterForClicks("AnyUp")
 	styleIcon(sphere, "Interface\\AddOns\\HoneyLock\\Textures\\icon")
 	sphere:SetScript("OnDragStart", function(self)
-		if not NL.db.bar.locked then bar:StartMoving() end
+		if not HL.db.bar.locked then bar:StartMoving() end
 	end)
 	sphere:SetScript("OnDragStop", function()
 		bar:StopMovingOrSizing()
 		local p, _, rp, x, y = bar:GetPoint()
-		NL.db.bar.point = { p, "UIParent", rp, x, y }
+		HL.db.bar.point = { p, "UIParent", rp, x, y }
 	end)
 	sphere:SetScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -430,7 +462,7 @@ function NL:BuildBar()
 	-- Right-click opens the options panel (insecure post-hook; out of combat).
 	sphere:SetScript("PostClick", function(self, button)
 		if button == "RightButton" and not InCombatLockdown() then
-			NL:OpenOptions()
+			HL:OpenOptions()
 		end
 	end)
 	self.barButtons.sphere = sphere
@@ -442,7 +474,7 @@ function NL:BuildBar()
 		styleIcon(btn, self:GetIcon(usage))
 		btn:SetScript("OnEnter", function(self)
 			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-			local id = NL:HighestKnownID(usage) or NL.SpellIDs[usage][1]
+			local id = HL:HighestKnownID(usage) or HL.SpellIDs[usage][1]
 			GameTooltip:SetSpellByID(id)
 			GameTooltip:AddLine("Left: use  |  Right: create", 0.7, 0.7, 0.7)
 			GameTooltip:Show()
@@ -468,7 +500,7 @@ function NL:BuildBar()
 	self:RefreshBar()
 end
 
-function NL:ConfigureSphere()
+function HL:ConfigureSphere()
 	if InCombatLockdown() or not self.barButtons then return end
 	local sphere = self.barButtons.sphere
 	if not sphere then return end
@@ -477,7 +509,7 @@ function NL:ConfigureSphere()
 	sphere:SetAttribute("spell1", nil)
 end
 
-function NL:LayoutBar()
+function HL:LayoutBar()
 	if InCombatLockdown() or not self.bar then return end
 	if self.db.bar.layout == "line" then
 		self:LayoutLine()
@@ -491,7 +523,7 @@ function NL:LayoutBar()
 end
 
 -- Honeycomb "flower": larger center icon ringed by six satellites.
-function NL:LayoutHoneycomb()
+function HL:LayoutHoneycomb()
 	local db = self.db.bar
 	local size, spacing = db.size, db.spacing
 	local sphereSize = math.floor(size * db.sphereScale + 0.5)
@@ -525,7 +557,7 @@ function NL:LayoutHoneycomb()
 end
 
 -- Classic straight row (optional alternative layout).
-function NL:LayoutLine()
+function HL:LayoutLine()
 	local db = self.db.bar
 	local size, spacing = db.size, db.spacing
 	local x = 0
@@ -547,14 +579,14 @@ function NL:LayoutLine()
 end
 
 -- Show/hide whole bar + refresh dynamic state.
-function NL:RefreshBar()
+function HL:RefreshBar()
 	if not self.bar then return end
 	self.bar:SetShown(self.db.bar.shown)
 	self.bar:SetScale(self.db.bar.scale)
 end
 
 -- Reconfigure everything after learning spells / leaving combat.
-function NL:RefreshButtons()
+function HL:RefreshButtons()
 	if InCombatLockdown() then return end
 	if not self.bar then return end
 	for _, usage in ipairs(STONES) do
@@ -571,7 +603,7 @@ function NL:RefreshButtons()
 end
 
 -- Called from options when a menu's default ability changes.
-function NL:SetMenuDefault(key, usage)
+function HL:SetMenuDefault(key, usage)
 	self.db.bar.menuDefault[key] = usage
 	local anchor = self.barButtons and self.barButtons[key]
 	if not anchor then return end
@@ -581,7 +613,7 @@ function NL:SetMenuDefault(key, usage)
 		-- Apply on the next frame: changing secure attributes from inside the
 		-- dropdown's click handler gets dropped, so escape that context first.
 		C_Timer.After(0, function()
-			if not InCombatLockdown() then NL:ConfigureMenuDefault(anchor) end
+			if not InCombatLockdown() then HL:ConfigureMenuDefault(anchor) end
 		end)
 	end
 end

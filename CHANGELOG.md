@@ -6,6 +6,24 @@ This project follows [Keep a Changelog](https://keepachangelog.com) and
 
 ## [Unreleased]
 
+## [0.1.8] - 2026-07-07
+### Added
+- Drop demon form to mount: the HL mount button/flyout now drops Metamorphosis
+  before casting (one click, no failed attempt), and a bag item/hotbar
+  button/macro mount blocked by shapeshift now drops form reactively so the
+  next click goes through. Toggle in options (Season of Discovery). Note:
+  auto-recasting a hotbar/macro mount isn't possible — Blizzard hardened
+  `/cast`-style slash commands against ChatEdit_SendText specifically.
+- Keybinding: bind a key directly to the HL mount button (Key Bindings ->
+  HoneyLock -> "Summon mount"), via a `CLICK HoneyLockMount:LeftButton`
+  binding so it fires the same secure click (PreClick form-drop included).
+- Debug log popup: a persistent, copyable window (`/hl debuglog`) for
+  addon diagnostics instead of spamming the chat frame.
+- Options panel now scrolls (it had grown past a single screen).
+### Changed
+- Internal: renamed the addon's local module alias from `NL` to `HL` in every
+  file. Cosmetic only — saved settings (`HoneyLockDB`) are unaffected.
+
 ## [0.1.7] - 2026-07-02
 ### Added
 - Automatically drop SoD demon form (Metamorphosis) at a flight master: when a
@@ -93,7 +111,8 @@ This project follows [Keep a Changelog](https://keepachangelog.com) and
 - Native Blizzard options panel (`/hl`).
 - 100% Lua, no XML, stock spell icons (octagon-masked); minimal libraries.
 
-[Unreleased]: https://github.com/tekHudson/HoneyLock/compare/v0.1.7...HEAD
+[Unreleased]: https://github.com/tekHudson/HoneyLock/compare/v0.1.8...HEAD
+[0.1.8]: https://github.com/tekHudson/HoneyLock/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/tekHudson/HoneyLock/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/tekHudson/HoneyLock/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/tekHudson/HoneyLock/compare/v0.1.4...v0.1.5

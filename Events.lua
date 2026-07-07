@@ -2,7 +2,7 @@
 	Events.lua - wires game events to the feature modules.
 ]]
 
-local NL = _G.HoneyLock
+local HL = _G.HoneyLock
 
 -- Reverse lookup: spellID -> usage, for cast-based timers.
 local CAST_TO_TIMER = {}
@@ -10,8 +10,8 @@ do
 	local function add(usage, ids)
 		for _, id in ipairs(ids) do CAST_TO_TIMER[id] = usage end
 	end
-	add("banish",  NL.SpellIDs.banish)
-	add("enslave", NL.SpellIDs.enslave)
+	add("banish",  HL.SpellIDs.banish)
+	add("enslave", HL.SpellIDs.enslave)
 	-- Soulstone *resurrection* (item use) spell ids -> soulstone buff timer
 	add("soulstone", { 20707, 20762, 20763, 20764, 20765 })
 end
@@ -28,23 +28,23 @@ local function requestBagScan()
 	bagDirty = true
 	C_Timer.After(0.3, function()
 		bagDirty = false
-		NL:ScanBags()
-		if NL.db.shards.organize and NL.OrganizeShards then
-			NL:OrganizeShards()
+		HL:ScanBags()
+		if HL.db.shards.organize and HL.OrganizeShards then
+			HL:OrganizeShards()
 		end
 		-- Note: shards can't be auto-destroyed — DeleteCursorItem is protected
-		-- and requires a hardware event (see NL:DestroyShards).
+		-- and requires a hardware event (see HL:DestroyShards).
 	end)
 end
 
 -- Throttle the Soulstone-buff reminder scan (UNIT_AURA fires in bursts).
 local reminderDirty = false
-function NL:RequestStoneReminderUpdate()
+function HL:RequestStoneReminderUpdate()
 	if reminderDirty then return end
 	reminderDirty = true
 	C_Timer.After(0.5, function()
 		reminderDirty = false
-		if NL.UpdateStoneReminders then NL:UpdateStoneReminders() end
+		if HL.UpdateStoneReminders then HL:UpdateStoneReminders() end
 	end)
 end
 
@@ -52,7 +52,7 @@ end
 -- Init
 ------------------------------------------------------------------------
 
-function NL:InitEvents()
+function HL:InitEvents()
 	self:RegisterEvent("BAG_UPDATE", requestBagScan)
 	self:RegisterEvent("BAG_UPDATE_DELAYED", requestBagScan)
 

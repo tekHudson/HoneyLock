@@ -11,10 +11,10 @@
 	casts that rank (Classic casts the highest known rank when no rank given).
 ]]
 
-local NL = _G.HoneyLock
+local HL = _G.HoneyLock
 
 -- usage -> { spellID, spellID, ... }  (ascending rank)
-NL.SpellIDs = {
+HL.SpellIDs = {
 	-- Stone creation
 	soulstone   = { 693, 20752, 20755, 20756, 20757, 27238, 47884 },
 	healthstone = { 6201, 6202, 5699, 11729, 11730, 27230, 47871, 47878 },
@@ -61,7 +61,7 @@ NL.SpellIDs = {
 }
 
 -- Reagent flags (for tooltips / shard awareness)
-NL.UsesSoulShard = {
+HL.UsesSoulShard = {
 	voidwalker = true, succubus = true, felhunter = true, felguard = true,
 	inferno = true, rit_of_doom = true, enslave = false,
 	soulstone = true, healthstone = true, spellstone = true, firestone = true,
@@ -69,8 +69,8 @@ NL.UsesSoulShard = {
 }
 
 -- Nightfall proc buff
-NL.SHADOW_TRANCE_SPELLID = 17941
-NL.SHADOW_TRANCE_NAME = (GetSpellInfo(17941))
+HL.SHADOW_TRANCE_SPELLID = 17941
+HL.SHADOW_TRANCE_NAME = (GetSpellInfo(17941))
 
 ------------------------------------------------------------------------
 -- Resolution helpers
@@ -86,12 +86,12 @@ end
 -- Cache of spells actually in the player's spellbook, keyed by name -> spellID.
 -- This lets SoD runes (which use different spell IDs than vanilla/TBC) resolve
 -- by name, so we don't have to hardcode every rune's ID.
-NL.knownByName = {}
+HL.knownByName = {}
 
 -- Scan the player's spellbook by flat index (no tab-count API needed — the
 -- skill-line count function is missing on the 1.15.4 SoD client). Records every
 -- *learned* spell name -> highest spellID. Skips not-yet-learned future spells.
-function NL:RefreshKnownSpells()
+function HL:RefreshKnownSpells()
 	wipe(self.knownByName)
 
 	local function record(name, id)
@@ -139,10 +139,10 @@ local function knownByExactName(name)
 	if id then return id end
 	return nil
 end
-NL.knownByExactName = knownByExactName
+HL.knownByExactName = knownByExactName
 
 -- Highest known spellID for a usage, or nil.
-function NL:HighestKnownID(usage)
+function HL:HighestKnownID(usage)
 	local list = self.SpellIDs[usage]
 	if not list then return nil end
 	for i = #list, 1, -1 do
@@ -163,14 +163,14 @@ function NL:HighestKnownID(usage)
 end
 
 -- Is any rank of this usage known?
-function NL:IsKnown(usage)
+function HL:IsKnown(usage)
 	return self:HighestKnownID(usage) ~= nil
 end
 
 -- Base (rank-stripped) cast name for a usage. Returns nil if unknown.
 -- Falls back to the lowest-rank id's name so buttons can show a label even
 -- before the spell is learned (the secure cast simply fails until learned).
-function NL:GetCastName(usage)
+function HL:GetCastName(usage)
 	local id = self:HighestKnownID(usage)
 	if not id then
 		local list = self.SpellIDs[usage]
@@ -186,7 +186,7 @@ function NL:GetCastName(usage)
 end
 
 -- Icon texture for a usage (uses highest known, else lowest).
-function NL:GetIcon(usage)
+function HL:GetIcon(usage)
 	local id = self:HighestKnownID(usage)
 	if not id then
 		local list = self.SpellIDs[usage]

@@ -6,7 +6,7 @@
 	InterfaceOptions API if needed.
 ]]
 
-local NL = _G.HoneyLock
+local HL = _G.HoneyLock
 
 ------------------------------------------------------------------------
 -- Small widget helpers (Blizzard templates)
@@ -133,54 +133,65 @@ local function buildPanel()
 
 	local title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
 	title:SetPoint("TOPLEFT", 16, -16)
-	title:SetText("HoneyLock " .. tostring(NL.version))
+	title:SetText("HoneyLock " .. tostring(HL.version))
 
 	local sub = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	sub:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -4)
 	sub:SetText("Lightweight warlock helper for Season of Discovery.")
 
+	-- Everything below the title scrolls -- the panel has grown past a single
+	-- screen's worth of content, so it can no longer all fit statically.
+	local scroll = CreateFrame("ScrollFrame", "HoneyLockOptionsScroll", panel, "UIPanelScrollFrameTemplate")
+	scroll:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, -60)
+	scroll:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -27, 4)
+
+	local content = CreateFrame("Frame", nil, scroll)
+	content:SetSize(760, 1)   -- height is finalized once every row is laid out
+	scroll:SetScrollChild(content)
+	scroll:SetScript("OnSizeChanged", function(self, w) if w > 0 then content:SetWidth(w) end end)
+
 	-- Two-column layout with section headers for a compact, tidy panel.
 	local COL1, COL2 = 22, 320
 	local ROW = 26
-	local y = -64
+	local y = -4
 
 	local function header(text)
 		y = y - 12
-		local h = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+		local h = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
 		h:SetPoint("TOPLEFT", 16, y)
 		h:SetText("|cffffd100" .. text .. "|r")
-		local line = panel:CreateTexture(nil, "ARTWORK")
+		local line = content:CreateTexture(nil, "ARTWORK")
 		line:SetColorTexture(1, 0.82, 0, 0.25)
 		line:SetPoint("TOPLEFT", 16, y - 16)
-		line:SetPoint("TOPRIGHT", panel, "TOPLEFT", 560, y - 16)
+		line:SetPoint("TOPRIGHT", content, "TOPLEFT", 560, y - 16)
 		line:SetHeight(1)
 		y = y - 22
 	end
 
 	-- Place a checkbox at a column on the current row (does not advance y).
 	local function put(col, label, tooltip, get, set)
-		local c = newCheckbox(panel, label, tooltip, get, set)
-		c:SetPoint("TOPLEFT", panel, "TOPLEFT", col, y)
+		local c = newCheckbox(content, label, tooltip, get, set)
+		c:SetPoint("TOPLEFT", content, "TOPLEFT", col, y)
 		return c
 	end
 	local function nextRow() y = y - ROW end
 
 	-- Setter helper for per-button visibility toggles.
-	local function showGet(key) return function() return NL.db.bar.show[key] end end
+	local function showGet(key) return function() return HL.db.bar.show[key] end end
 	local function showSet(key)
 		return function(v)
-			NL.db.bar.show[key] = v
-			if InCombatLockdown() then NL.deferredRefresh = true else NL:LayoutBar() end
+			HL.db.bar.show[key] = v
+			if InCombatLockdown() then HL.deferredRefresh = true else HL:LayoutBar() end
 		end
 	end
 
 	header("Bar")
 	put(COL1, "Show bar", "Toggle the warlock button bar.",
-		function() return NL.db.bar.shown end,
-		function(v) NL.db.bar.shown = v; NL:RefreshBar() end)
+		function() return HL.db.bar.shown end,
+		function(v) HL.db.bar.shown = v; HL:RefreshBar() end)
 	put(COL2, "Lock position", "Prevent dragging the bar.",
-		function() return NL.db.bar.locked end,
-		function(v) NL.db.bar.locked = v end)
+		function() return HL.db.bar.locked end,
+		function(v) HL.db.bar.locked = v end)
 	nextRow()
 
 	header("Buttons")
@@ -194,77 +205,80 @@ local function buildPanel()
 	header("Menu defaults (left-click cast)")
 	local function menuChoices(key)
 		local t = {}
-		for _, usage in ipairs(NL.MenuUsages[key]) do
-			t[#t + 1] = { text = NL:GetCastName(usage) or usage, value = usage }
+		for _, usage in ipairs(HL.MenuUsages[key]) do
+			t[#t + 1] = { text = HL:GetCastName(usage) or usage, value = usage }
 		end
 		return t
 	end
 	local buffDD = newDropdown(panel, "Buff menu", menuChoices("buffmenu"),
-		function() return NL.db.bar.menuDefault.buffmenu end,
-		function(v) NL:SetMenuDefault("buffmenu", v) end)
+		function() return HL.db.bar.menuDefault.buffmenu end,
+		function(v) HL:SetMenuDefault("buffmenu", v) end)
 	buffDD:PlaceAt(COL1 - 4, y)
 	local petDD = newDropdown(panel, "Pet menu", menuChoices("petmenu"),
-		function() return NL.db.bar.menuDefault.petmenu end,
-		function(v) NL:SetMenuDefault("petmenu", v) end)
+		function() return HL.db.bar.menuDefault.petmenu end,
+		function(v) HL:SetMenuDefault("petmenu", v) end)
 	petDD:PlaceAt(COL2 - 4, y)
 	y = y - 52
 	local utilDD = newDropdown(panel, "Utility menu", menuChoices("utility"),
-		function() return NL.db.bar.menuDefault.utility end,
-		function(v) NL:SetMenuDefault("utility", v) end)
+		function() return HL.db.bar.menuDefault.utility end,
+		function(v) HL:SetMenuDefault("utility", v) end)
 	utilDD:PlaceAt(COL1 - 4, y)
 	y = y - 48
 
 	header("Soul shards")
 	put(COL1, "Shard counter", "Show the shard count below the logo.",
-		function() return NL.db.shards.showCounter end,
-		function(v) NL.db.shards.showCounter = v; NL:UpdateShardDisplay() end)
+		function() return HL.db.shards.showCounter end,
+		function(v) HL.db.shards.showCounter = v; HL:UpdateShardDisplay() end)
 	put(COL2, "Auto-organize", "Move loose shards into a soul bag.",
-		function() return NL.db.shards.organize end,
-		function(v) NL.db.shards.organize = v end)
+		function() return HL.db.shards.organize end,
+		function(v) HL.db.shards.organize = v end)
 	nextRow()
 	put(COL1, "Show shard limit", "Show count as current/limit and warn when over.",
-		function() return NL.db.shards.autoDestroy end,
-		function(v) NL.db.shards.autoDestroy = v; NL:UpdateShardDisplay() end)
+		function() return HL.db.shards.autoDestroy end,
+		function(v) HL.db.shards.autoDestroy = v; HL:UpdateShardDisplay() end)
 	local keepBox = newIntBox(panel, "Limit", 0, 999,
-		function() return NL.db.shards.keep end,
-		function(v) NL.db.shards.keep = v; NL:UpdateShardDisplay() end)
+		function() return HL.db.shards.keep end,
+		function(v) HL.db.shards.keep = v; HL:UpdateShardDisplay() end)
 	keepBox:PlaceAt(COL2, y + 2)
 	nextRow()
 	-- counter font (dropdown) + size (integer)
 	local fontDD = newDropdown(panel, "Counter font", FONT_CHOICES,
-		function() return NL.db.shards.font end,
-		function(v) NL.db.shards.font = v; NL:UpdateShardDisplay() end)
+		function() return HL.db.shards.font end,
+		function(v) HL.db.shards.font = v; HL:UpdateShardDisplay() end)
 	fontDD:PlaceAt(COL1 - 4, y)
 	local sizeBox = newIntBox(panel, "Size", 6, 48,
-		function() return NL.db.shards.fontSize end,
-		function(v) NL.db.shards.fontSize = v; NL:UpdateShardDisplay() end)
+		function() return HL.db.shards.fontSize end,
+		function(v) HL.db.shards.fontSize = v; HL:UpdateShardDisplay() end)
 	sizeBox:PlaceAt(COL2, y - 16)
 	y = y - 48
 
 	header("Timers & alerts")
 	put(COL1, "Timers", "Show Soulstone / Banish / Enslave timers.",
-		function() return NL.db.timers.enabled end,
-		function(v) NL.db.timers.enabled = v; if not v then NL:ClearTimers() end end)
+		function() return HL.db.timers.enabled end,
+		function(v) HL.db.timers.enabled = v; if not v then HL:ClearTimers() end end)
 	put(COL2, "Nightfall flash", "Flash when Shadow Trance procs.",
-		function() return NL.db.alerts.nightfall end,
-		function(v) NL.db.alerts.nightfall = v; if not v then NL:HideNightfall() end end)
+		function() return HL.db.alerts.nightfall end,
+		function(v) HL.db.alerts.nightfall = v; if not v then HL:HideNightfall() end end)
 	nextRow()
 	put(COL1, "Nightfall sound", nil,
-		function() return NL.db.alerts.sound end,
-		function(v) NL.db.alerts.sound = v end)
+		function() return HL.db.alerts.sound end,
+		function(v) HL.db.alerts.sound = v end)
 	nextRow()
 
 	header("Season of Discovery")
 	put(COL1, "Drop demon form at flight master", "Cancel Metamorphosis when a flight path is refused due to form.",
-		function() return NL.db.demonForm.dropAtFlightMaster end,
-		function(v) NL.db.demonForm.dropAtFlightMaster = v end)
+		function() return HL.db.demonForm.dropAtFlightMaster end,
+		function(v) HL.db.demonForm.dropAtFlightMaster = v end)
+	put(COL2, "Drop demon form to mount", "Cancel Metamorphosis before mounting (bag item, action button, or the HL mount button).",
+		function() return HL.db.demonForm.dropOnMount end,
+		function(v) HL.db.demonForm.dropOnMount = v end)
 	nextRow()
 
 	header("Display")
 	y = y - 18
 	local scale = newSlider(panel, "Bar scale", 0.5, 2.0, 0.05,
-		function() return NL.db.bar.scale end,
-		function(v) NL.db.bar.scale = v; NL:RefreshBar() end)
+		function() return HL.db.bar.scale end,
+		function(v) HL.db.bar.scale = v; HL:RefreshBar() end)
 	scale:SetPoint("TOPLEFT", panel, "TOPLEFT", COL1 + 8, y)
 
 	return panel
@@ -274,7 +288,7 @@ end
 -- Register + open
 ------------------------------------------------------------------------
 
-function NL:InitOptions()
+function HL:InitOptions()
 	if self.optionsPanel then return end
 	local panel = buildPanel()
 	self.optionsPanel = panel
@@ -289,7 +303,7 @@ function NL:InitOptions()
 	end
 end
 
-function NL:OpenOptions()
+function HL:OpenOptions()
 	self:InitOptions()
 	if Settings and Settings.OpenToCategory and self.settingsCategory then
 		Settings.OpenToCategory(self.settingsCategory.ID or self.settingsCategory:GetID())

@@ -6,9 +6,9 @@
 	No custom textures (uses a Blizzard status-bar texture).
 ]]
 
-local NL = _G.HoneyLock
+local HL = _G.HoneyLock
 
-NL:RegisterDefaults({
+HL:RegisterDefaults({
 	timers = {
 		enabled = true,
 		point = { "CENTER", "UIParent", "CENTER", 250, 120 },
@@ -36,13 +36,13 @@ local active = {}   -- list of { usage, label, expires, duration, frame }
 ------------------------------------------------------------------------
 
 local function ensureAnchor()
-	if NL.timerAnchor then return NL.timerAnchor end
+	if HL.timerAnchor then return HL.timerAnchor end
 	local f = CreateFrame("Frame", "HoneyLockTimers", UIParent)
-	f:SetSize(NL.db.timers.width, NL.db.timers.height)
-	f:SetPoint(unpack(NL.db.timers.point))
+	f:SetSize(HL.db.timers.width, HL.db.timers.height)
+	f:SetPoint(unpack(HL.db.timers.point))
 	f:SetMovable(true)
 	f:EnableMouse(false)
-	NL.timerAnchor = f
+	HL.timerAnchor = f
 	return f
 end
 
@@ -53,7 +53,7 @@ local function acquireBar()
 	local anchor = ensureAnchor()
 	bar = CreateFrame("StatusBar", nil, anchor)
 	bar:SetStatusBarTexture(BAR_TEX)
-	bar:SetSize(NL.db.timers.width, NL.db.timers.height)
+	bar:SetSize(HL.db.timers.width, HL.db.timers.height)
 	bar.bg = bar:CreateTexture(nil, "BACKGROUND")
 	bar.bg:SetAllPoints()
 	bar.bg:SetColorTexture(0, 0, 0, 0.5)
@@ -72,11 +72,11 @@ end
 
 local function relayout()
 	local y = 0
-	local h, sp = NL.db.timers.height, NL.db.timers.spacing
+	local h, sp = HL.db.timers.height, HL.db.timers.spacing
 	for _, t in ipairs(active) do
 		t.frame:ClearAllPoints()
-		t.frame:SetPoint("TOPLEFT", NL.timerAnchor, "TOPLEFT", 0, y)
-		t.frame:SetSize(NL.db.timers.width, h)
+		t.frame:SetPoint("TOPLEFT", HL.timerAnchor, "TOPLEFT", 0, y)
+		t.frame:SetSize(HL.db.timers.width, h)
 		y = y - (h + sp)
 	end
 end
@@ -85,7 +85,7 @@ end
 -- Public: start / clear
 ------------------------------------------------------------------------
 
-function NL:StartTimer(usage, label, duration)
+function HL:StartTimer(usage, label, duration)
 	if not self.db.timers.enabled then return end
 	if not self.db.timers.track[usage] then return end
 	duration = duration or DURATIONS[usage] or 30
@@ -113,7 +113,7 @@ function NL:StartTimer(usage, label, duration)
 	self:StartTimerTicker()
 end
 
-function NL:StartTimerTicker()
+function HL:StartTimerTicker()
 	if self.timerTicker then return end
 	self.timerTicker = self:ScheduleRepeatingTimer(function()
 		local now = GetTime()
@@ -133,15 +133,15 @@ function NL:StartTimerTicker()
 			end
 		end
 		if changed then relayout() end
-		if #active == 0 and NL.timerTicker then
-			NL:CancelTimer(NL.timerTicker)
-			NL.timerTicker = nil
+		if #active == 0 and HL.timerTicker then
+			HL:CancelTimer(HL.timerTicker)
+			HL.timerTicker = nil
 		end
 	end, 0.1)
 end
 
 -- Remove all active timer bars and stop the ticker (e.g. when disabled).
-function NL:ClearTimers()
+function HL:ClearTimers()
 	for i = #active, 1, -1 do
 		releaseBar(active[i].frame)
 		active[i] = nil

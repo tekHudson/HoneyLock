@@ -6,9 +6,9 @@
 	buff is consumed/expires. No custom textures (uses the spell's own icon).
 ]]
 
-local NL = _G.HoneyLock
+local HL = _G.HoneyLock
 
-NL:RegisterDefaults({
+HL:RegisterDefaults({
 	alerts = {
 		nightfall = true,
 		sound = true,
@@ -17,7 +17,7 @@ NL:RegisterDefaults({
 })
 
 local function findShadowTrance()
-	local name = NL.SHADOW_TRANCE_NAME
+	local name = HL.SHADOW_TRANCE_NAME
 	if not name then return false end
 	if AuraUtil and AuraUtil.FindAuraByName then
 		return AuraUtil.FindAuraByName(name, "player") ~= nil
@@ -32,7 +32,7 @@ local function findShadowTrance()
 end
 
 local function ensureFrame()
-	if NL.nightfallFrame then return NL.nightfallFrame end
+	if HL.nightfallFrame then return HL.nightfallFrame end
 	local f = CreateFrame("Frame", "HoneyLockNightfall", UIParent)
 	f:SetSize(64, 64)
 	f:SetPoint("CENTER", UIParent, "CENTER", 0, 150)
@@ -40,7 +40,7 @@ local function ensureFrame()
 
 	local icon = f:CreateTexture(nil, "ARTWORK")
 	icon:SetAllPoints()
-	icon:SetTexture((select(3, GetSpellInfo(NL.SHADOW_TRANCE_SPELLID))) or "Interface\\Icons\\Spell_Shadow_Twilight")
+	icon:SetTexture((select(3, GetSpellInfo(HL.SHADOW_TRANCE_SPELLID))) or "Interface\\Icons\\Spell_Shadow_Twilight")
 	icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
 	f.icon = icon
 
@@ -62,11 +62,11 @@ local function ensureFrame()
 	pulse:SetOrigin("CENTER", 0, 0)
 	f.pulse = ag
 
-	NL.nightfallFrame = f
+	HL.nightfallFrame = f
 	return f
 end
 
-function NL:ShowNightfall()
+function HL:ShowNightfall()
 	if not self.db.alerts.nightfall then return end
 	local f = ensureFrame()
 	f:SetScale(self.db.alerts.scale)
@@ -77,7 +77,7 @@ function NL:ShowNightfall()
 	end
 end
 
-function NL:HideNightfall()
+function HL:HideNightfall()
 	if self.nightfallFrame then
 		if self.nightfallFrame.pulse then self.nightfallFrame.pulse:Stop() end
 		self.nightfallFrame:Hide()
@@ -85,7 +85,7 @@ function NL:HideNightfall()
 end
 
 -- Called from the aura event handler.
-function NL:CheckNightfall()
+function HL:CheckNightfall()
 	local has = findShadowTrance()
 	if has and not self.nightfallActive then
 		self.nightfallActive = true
