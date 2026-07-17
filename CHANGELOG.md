@@ -6,6 +6,11 @@ This project follows [Keep a Changelog](https://keepachangelog.com) and
 
 ## [Unreleased]
 
+## [0.1.9] - 2026-07-17
+### Added
+- Nightfall proc sound is now configurable: pick between Ready Check (default),
+  Raid Warning, or Level Up in options, instead of the sound being hardcoded.
+
 ## [0.1.8] - 2026-07-07
 ### Added
 - Drop demon form to mount: the HL mount button/flyout now drops Metamorphosis
@@ -111,7 +116,8 @@ This project follows [Keep a Changelog](https://keepachangelog.com) and
 - Native Blizzard options panel (`/hl`).
 - 100% Lua, no XML, stock spell icons (octagon-masked); minimal libraries.
 
-[Unreleased]: https://github.com/tekHudson/HoneyLock/compare/v0.1.8...HEAD
+[Unreleased]: https://github.com/tekHudson/HoneyLock/compare/v0.1.9...HEAD
+[0.1.9]: https://github.com/tekHudson/HoneyLock/compare/v0.1.8...v0.1.9
 [0.1.8]: https://github.com/tekHudson/HoneyLock/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/tekHudson/HoneyLock/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/tekHudson/HoneyLock/compare/v0.1.5...v0.1.6

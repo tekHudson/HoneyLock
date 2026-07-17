@@ -12,9 +12,19 @@ HL:RegisterDefaults({
 	alerts = {
 		nightfall = true,
 		sound = true,
+		soundId = 8960, -- Ready Check
 		scale = 1.0,
 	},
 })
+
+-- Built-in Blizzard sounds the player can pick between for the Nightfall
+-- proc alert. Raw IDs are used as a fallback since SOUNDKIT entries aren't
+-- guaranteed to exist on every client.
+HL.NIGHTFALL_SOUND_CHOICES = {
+	{ text = "Ready Check",  value = SOUNDKIT and SOUNDKIT.READY_CHECK or 8960 },
+	{ text = "Raid Warning", value = SOUNDKIT and SOUNDKIT.RAID_WARNING or 8959 },
+	{ text = "Level Up",     value = 888 },
+}
 
 local function findShadowTrance()
 	local name = HL.SHADOW_TRANCE_NAME
@@ -73,7 +83,7 @@ function HL:ShowNightfall()
 	f:Show()
 	if f.pulse then f.pulse:Play() end
 	if self.db.alerts.sound then
-		PlaySound(SOUNDKIT and SOUNDKIT.READY_CHECK or 8960, "Master")
+		PlaySound(self.db.alerts.soundId or 8960, "Master")
 	end
 end
 

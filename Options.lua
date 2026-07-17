@@ -263,7 +263,11 @@ local function buildPanel()
 	put(COL1, "Nightfall sound", nil,
 		function() return HL.db.alerts.sound end,
 		function(v) HL.db.alerts.sound = v end)
-	nextRow()
+	local soundDD = newDropdown(panel, "Sound", HL.NIGHTFALL_SOUND_CHOICES,
+		function() return HL.db.alerts.soundId end,
+		function(v) HL.db.alerts.soundId = v end)
+	soundDD:PlaceAt(COL2 - 4, y)
+	y = y - 48
 
 	header("Season of Discovery")
 	put(COL1, "Drop demon form at flight master", "Cancel Metamorphosis when a flight path is refused due to form.",
