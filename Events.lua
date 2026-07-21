@@ -74,7 +74,8 @@ function HL:InitEvents()
 	end
 	-- learning/unlearning spells and (SoD) rune changes
 	self:RegisterEvent("SPELLS_CHANGED", refresh)
-	self:RegisterEvent("LEARNED_SPELL_IN_TAB", refresh)
+	-- best-effort; not a valid event on every client build
+	pcall(function() self:RegisterEvent("LEARNED_SPELL_IN_TAB", refresh) end)
 	self:RegisterEvent("PLAYER_ENTERING_WORLD", refresh)
 	-- changing gear / engraving runes
 	self:RegisterEvent("PLAYER_EQUIPMENT_CHANGED", refresh)
@@ -103,6 +104,9 @@ function HL:InitEvents()
 		local usage = CAST_TO_TIMER[spellID]
 		if usage then
 			self:StartTimer(usage, TIMER_LABEL[usage], nil)
+		end
+		if HL.SummonSpellIDs[spellID] then
+			self:AnnounceSummon(spellID)
 		end
 	end)
 end

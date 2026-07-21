@@ -6,6 +6,39 @@ This project follows [Keep a Changelog](https://keepachangelog.com) and
 
 ## [Unreleased]
 
+## [0.1.10] - 2026-07-21
+### Added
+- Summon Message: optionally say a message in party (or raid, if in one) when
+  you cast Ritual of Summoning or the Portal of Summoning rune. Toggle and
+  message text (default `I am casting <spell name>, please click.`) are
+  configurable; `<spell name>` is replaced with the actual spell cast.
+### Changed
+- Options panel reorganized into a native sidebar tree: the main **HoneyLock**
+  page now holds only General (show/lock, drop-demon-form toggles) and
+  Display; **Buttons** (renamed from Menu Defaults; now also holds per-button
+  show/hide), **Soul Shards**, **Timers & Alerts**, and **Summon Message** are
+  nested subcategories. The standalone Season of Discovery page was folded
+  into General. "Show bar" renamed to "Show HoneyLock".
+- Each settings page is now its own canvas frame instead of one long scrolling
+  page, which also fixes a layout bug where dropdowns/number boxes rendered
+  ~60px too high and overlapped earlier rows/the title.
+### Fixed
+- Compatibility with WoW Classic Era/SoD 1.15.9's shared-code UI update:
+  - Buttons stopped responding to clicks with no error: `SecureActionButtonTemplate`
+    now gates `OnClick` on the `ActionButtonUseKeyDown` CVar (shared with retail
+    action bars); every HoneyLock button now pins `useOnKeyDown` to `false` so
+    up-clicks always fire regardless of that CVar's default.
+  - `/hl` stopped opening the options panel: `Settings.OpenToCategory` now
+    requires the real numeric category ID: HoneyLock was overwriting it with
+    the addon's name (a string). Fixed to keep Blizzard's assigned ID.
+  - Version showed as `0.1.0` in `/hl debug`: `GetAddOnMetadata` moved to
+    `C_AddOns.GetAddOnMetadata`; added a fallback.
+  - Flyout menu tooltips (Buff/Pet/Utility/Mount) errored on hover from a
+    chained `gsub` call leaking an extra return value into `GameTooltip:SetText`.
+  - `LEARNED_SPELL_IN_TAB` registration errored on this client build; wrapped
+    in `pcall` like the addon's other best-effort event registrations.
+  - `.toc` Interface bumped to 11509.
+
 ## [0.1.9] - 2026-07-17
 ### Added
 - Nightfall proc sound is now configurable: pick between Ready Check (default),
@@ -116,7 +149,8 @@ This project follows [Keep a Changelog](https://keepachangelog.com) and
 - Native Blizzard options panel (`/hl`).
 - 100% Lua, no XML, stock spell icons (octagon-masked); minimal libraries.
 
-[Unreleased]: https://github.com/tekHudson/HoneyLock/compare/v0.1.9...HEAD
+[Unreleased]: https://github.com/tekHudson/HoneyLock/compare/v0.1.10...HEAD
+[0.1.10]: https://github.com/tekHudson/HoneyLock/compare/v0.1.9...v0.1.10
 [0.1.9]: https://github.com/tekHudson/HoneyLock/compare/v0.1.8...v0.1.9
 [0.1.8]: https://github.com/tekHudson/HoneyLock/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/tekHudson/HoneyLock/compare/v0.1.6...v0.1.7

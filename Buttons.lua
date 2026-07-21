@@ -138,6 +138,22 @@ function HL:Debug()
 			add("  " .. usage .. " (no button)")
 		end
 	end
+
+	add("")
+	add("Menu anchor attributes (type1/spell1/unit/defaultUsage/shown):")
+	for _, key in ipairs(MENU_KEYS) do
+		local b = self.barButtons and self.barButtons[key]
+		if b then
+			add(("  %-10s t1=%s s1=%s unit=%s def=%s shown=%s size=%dx%d"):format(
+				key,
+				tostring(b:GetAttribute("type1")), tostring(b:GetAttribute("spell1")),
+				tostring(b:GetAttribute("unit")), tostring(b.defaultUsage),
+				tostring(b:IsShown()), b:GetWidth(), b:GetHeight()))
+		else
+			add("  " .. key .. " (no button)")
+		end
+	end
+
 	add("InCombatLockdown: " .. tostring(InCombatLockdown()))
 
 	self:ShowCopyWindow(table.concat(lines, "\n"))
@@ -201,6 +217,11 @@ end
 function HL:MakeSpellButton(name, parent, usage)
 	local btn = CreateFrame("Button", name, parent, "SecureActionButtonTemplate")
 	btn:RegisterForClicks("AnyUp")
+	-- Since 1.15.9, SecureActionButtonTemplate's OnClick is gated by the
+	-- CVar "ActionButtonUseKeyDown" (shared code with retail action bars):
+	-- if that resolves true, an up-only click (like ours) is silently
+	-- dropped. Pin it explicitly so our buttons always fire on mouse-up.
+	btn:SetAttribute("useOnKeyDown", false)
 	btn.usage = usage
 	styleIcon(btn, self:GetIcon(usage))
 	btn:SetScript("OnEnter", function(self)
@@ -309,6 +330,7 @@ function HL:MakeMenu(name, parent, key, icon)
 	-- Left-click casts the menu's default ability; right-click opens the flyout.
 	local anchor = CreateFrame("Button", name, parent, "SecureActionButtonTemplate")
 	anchor:RegisterForClicks("AnyUp")
+	anchor:SetAttribute("useOnKeyDown", false) -- see MakeSpellButton
 	styleIcon(anchor, icon)
 
 	-- container holding the secure child buttons
@@ -357,7 +379,9 @@ function HL:MakeMenu(name, parent, key, icon)
 	anchor:SetScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
 		local def = self.defaultUsage or HL.db.bar.menuDefault[key]
-		GameTooltip:SetText((key:gsub("menu", " menu")):gsub("^%l", string.upper))
+		local label = key:gsub("menu", " menu")
+		label = label:gsub("^%l", string.upper)
+		GameTooltip:SetText(label)
 		GameTooltip:AddLine("Left: cast " .. tostring(HL:GetCastName(def) or def) ..
 			"  |  Right: open menu", 0.7, 0.7, 0.7)
 		GameTooltip:Show()
@@ -443,6 +467,7 @@ function HL:BuildBar()
 	local sphere = CreateFrame("Button", "HoneyLockSphere", bar, "SecureActionButtonTemplate")
 	sphere:RegisterForDrag("LeftButton")
 	sphere:RegisterForClicks("AnyUp")
+	sphere:SetAttribute("useOnKeyDown", false) -- see MakeSpellButton
 	styleIcon(sphere, "Interface\\AddOns\\HoneyLock\\Textures\\icon")
 	sphere:SetScript("OnDragStart", function(self)
 		if not HL.db.bar.locked then bar:StartMoving() end
@@ -471,6 +496,7 @@ function HL:BuildBar()
 	for _, usage in ipairs(STONES) do
 		local btn = CreateFrame("Button", "HoneyLock_" .. usage, bar, "SecureActionButtonTemplate")
 		btn:RegisterForClicks("AnyUp")
+		btn:SetAttribute("useOnKeyDown", false) -- see MakeSpellButton
 		styleIcon(btn, self:GetIcon(usage))
 		btn:SetScript("OnEnter", function(self)
 			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")

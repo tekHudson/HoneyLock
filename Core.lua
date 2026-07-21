@@ -10,7 +10,10 @@ local AceAddon = LibStub("AceAddon-3.0")
 local HL = AceAddon:NewAddon("HoneyLock", "AceEvent-3.0", "AceTimer-3.0")
 _G.HoneyLock = HL
 
-HL.version = GetAddOnMetadata and GetAddOnMetadata(ADDON_NAME, "Version") or "0.1.0"
+-- 1.15.9 moved this to C_AddOns (shared code with retail); the bare global
+-- may be gone entirely on newer clients, so prefer the namespaced call.
+local GetMeta = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
+HL.version = GetMeta and GetMeta(ADDON_NAME, "Version") or "0.1.0"
 
 ------------------------------------------------------------------------
 -- Saved variables: defaults + recursive merge (no AceDB dependency)
