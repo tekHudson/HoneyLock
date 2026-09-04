@@ -58,6 +58,10 @@ HL:RegisterDefaults({
 -- Bolt isn't in Spells.lua's button data; add the base id for the sphere.
 HL.SpellIDs.bolt = HL.SpellIDs.bolt or { 686 }
 
+-- 1.15.9-era clients may expose the modern namespaced call; fall back to the
+-- classic global (same signature: isUsable, notEnoughMana = fn(spellID)).
+local IsSpellUsable = (C_Spell and C_Spell.IsSpellUsable) or _G.IsUsableSpell
+
 ------------------------------------------------------------------------
 -- Menu contents and per-usage cast target
 ------------------------------------------------------------------------
@@ -249,14 +253,47 @@ function HL:ConfigureSpellButton(btn, usage)
 	self:UpdateButtonAvailability(btn, usage)
 end
 
--- Grey out (desaturate + dim) a button when its spell isn't currently known.
+-- Grey out (desaturate + dim) a button when its spell isn't currently known,
+-- or when it is known but unaffordable (not enough mana).
 function HL:UpdateButtonAvailability(btn, usage)
 	if not btn.icon then return end
 	btn.icon:SetTexture(self:GetIcon(usage))
 	local known = self:IsKnown(usage)
-	btn.icon:SetDesaturated(not known)
-	btn.icon:SetAlpha(known and 1 or 0.4)
-	if btn.ring then btn.ring:SetAlpha(known and 0.9 or 0.4) end
+	local noMana = false
+	if known and IsSpellUsable then
+		local id = self:HighestKnownID(usage)
+		if id then
+			local _, notEnoughMana = IsSpellUsable(id)
+			noMana = notEnoughMana and true or false
+		end
+	end
+	local show = known and not noMana
+	btn.icon:SetDesaturated(not show)
+	btn.icon:SetAlpha(show and 1 or 0.4)
+	if btn.ring then btn.ring:SetAlpha(show and 0.9 or 0.4) end
+end
+
+-- Cheap cosmetic-only pass (no secure attribute changes -- safe in combat)
+-- over every button's grey-out state. Called after mana changes.
+function HL:UpdateAllButtonAvailability()
+	if not self.barButtons then return end
+	if self.stoneButtons then
+		for _, usage in ipairs(STONES) do
+			local btn = self.stoneButtons[usage]
+			if btn then self:UpdateButtonAvailability(btn, usage) end
+		end
+	end
+	for _, key in ipairs(MENU_KEYS) do
+		local anchor = self.barButtons[key]
+		if anchor then
+			if anchor.defaultUsage then self:UpdateButtonAvailability(anchor, anchor.defaultUsage) end
+			if anchor.flyout and anchor.flyout.children then
+				for _, child in ipairs(anchor.flyout.children) do
+					if child._usage then self:UpdateButtonAvailability(child, child._usage) end
+				end
+			end
+		end
+	end
 end
 
 ------------------------------------------------------------------------
@@ -524,6 +561,7 @@ function HL:BuildBar()
 
 	self:LayoutBar()
 	self:RefreshBar()
+	self:UpdateAllButtonAvailability()
 end
 
 function HL:ConfigureSphere()

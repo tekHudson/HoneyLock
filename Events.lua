@@ -48,6 +48,18 @@ function HL:RequestStoneReminderUpdate()
 	end)
 end
 
+-- Throttle the mana-based grey-out refresh (UNIT_POWER_UPDATE fires on
+-- every regen tick).
+local manaDirty = false
+local function requestManaRefresh()
+	if manaDirty then return end
+	manaDirty = true
+	C_Timer.After(0.2, function()
+		manaDirty = false
+		if HL.UpdateAllButtonAvailability then HL:UpdateAllButtonAvailability() end
+	end)
+end
+
 ------------------------------------------------------------------------
 -- Init
 ------------------------------------------------------------------------
@@ -97,6 +109,15 @@ function HL:InitEvents()
 		self:RequestStoneReminderUpdate()
 	end)
 	self:RegisterEvent("GROUP_ROSTER_UPDATE", function() self:RequestStoneReminderUpdate() end)
+
+	-- Grey out buttons you can't afford; also catches Amplify/Dampen Magic
+	-- style spec swaps that only change max mana.
+	self:RegisterEvent("UNIT_POWER_UPDATE", function(_, unit, powerType)
+		if unit == "player" and powerType == "MANA" then requestManaRefresh() end
+	end)
+	self:RegisterEvent("UNIT_MAXPOWER", function(_, unit)
+		if unit == "player" then requestManaRefresh() end
+	end)
 
 	-- Cast-based timers
 	self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED", function(_, unit, _, spellID)
