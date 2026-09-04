@@ -151,13 +151,8 @@ local function ensureFrame()
 	ants:Hide()
 	f.ants = ants
 
-	local label = f:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-	label:SetPoint("TOP", f, "BOTTOM", 0, -2)
-	label:SetText("Nightfall!")
-	f.label = label
-
 	local hint = f:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-	hint:SetPoint("TOP", label, "BOTTOM", 0, -2)
+	hint:SetPoint("TOP", f, "BOTTOM", 0, -2)
 	hint:SetText("Unlocked - drag to move")
 	hint:Hide()
 	f.hint = hint
