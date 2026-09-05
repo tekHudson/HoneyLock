@@ -6,6 +6,26 @@ This project follows [Keep a Changelog](https://keepachangelog.com) and
 
 ## [Unreleased]
 
+## [0.1.11] - 2026-09-05
+### Added
+- Nightfall proc alert overhaul (Timers & Alerts page): choose the icon shown
+  (Shadow Trance or Shadow Bolt), a transparency slider, a size slider, a
+  crawling "marching ants" proc-glow border, and a radial countdown swipe
+  (no numbers/bar) tracking the free-cast window as it runs out.
+- Nightfall icon can now be unlocked and dragged to a new spot via an
+  "Unlock icon (drag to move)" checkbox, with a live preview while unlocked.
+- Bar icons (soul stones, and every flyout menu's default + children) now
+  grey out when the spell is known but unaffordable (not enough mana), not
+  just when it's unknown.
+### Fixed
+- Felguard, Fel Armor, and Portal of Summoning (all SoD rune-only) no longer
+  appear as dead entries in the pet/buff/utility flyout menus or the
+  Left-click-default dropdowns on non-SoD Classic Era realms (vanilla/
+  Anniversary/Hardcore), where they were unreachable and previously failed
+  to cast silently if picked.
+### Removed
+- The "Nightfall!" text label under the proc icon.
+
 ## [0.1.10] - 2026-07-21
 ### Added
 - Summon Message: optionally say a message in party (or raid, if in one) when
