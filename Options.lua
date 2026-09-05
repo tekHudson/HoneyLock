@@ -280,7 +280,7 @@ local function buildButtonsPage()
 
 	local function menuChoices(key)
 		local t = {}
-		for _, usage in ipairs(HL.MenuUsages[key]) do
+		for _, usage in ipairs(HL:MenuEntries(key)) do
 			t[#t + 1] = { text = HL:GetCastName(usage) or usage, value = usage }
 		end
 		return t
@@ -355,6 +355,44 @@ local function buildTimersPage()
 		function() return HL.db.alerts.soundId end,
 		function(v) HL.db.alerts.soundId = v end)
 	soundDD:PlaceAt(COL2 - 4, L.getY())
+	L.nextRow()
+	L.shift(-14)
+
+	L.header("Nightfall appearance")
+	local y = L.getY()
+	local iconDD = newDropdown(panel, "Icon", HL.NIGHTFALL_ICON_CHOICES,
+		function() return HL.db.alerts.icon end,
+		function(v) HL.db.alerts.icon = v; HL:RefreshNightfallAppearance() end)
+	iconDD:PlaceAt(COL1 - 4, y)
+	L.put(COL2, "Crawling glow", "Marching-ants proc border around the icon.",
+		function() return HL.db.alerts.glow end,
+		function(v) HL.db.alerts.glow = v; HL:RefreshNightfallAppearance() end)
+	L.shift(-38)
+	L.put(COL2, "Countdown swipe", "Radial wipe showing the free-cast window running out.",
+		function() return HL.db.alerts.countdown end,
+		function(v)
+			HL.db.alerts.countdown = v
+			if not v and HL.nightfallFrame and HL.nightfallFrame.cooldown then
+				HL.nightfallFrame.cooldown:Hide()
+			end
+		end)
+	L.nextRow()
+	L.shift(-18)
+
+	local alpha = newSlider(panel, "Transparency", 0.1, 1.0, 0.05,
+		function() return HL.db.alerts.alpha end,
+		function(v) HL.db.alerts.alpha = v; HL:RefreshNightfallAppearance() end)
+	alpha:SetPoint("TOPLEFT", panel, "TOPLEFT", COL1 + 8, L.getY())
+	local size = newSlider(panel, "Icon size", 0.5, 2.0, 0.05,
+		function() return HL.db.alerts.scale end,
+		function(v) HL.db.alerts.scale = v; HL:RefreshNightfallAppearance() end)
+	size:SetPoint("TOPLEFT", panel, "TOPLEFT", COL2 + 8, L.getY())
+	L.shift(-50)
+
+	L.put(COL1, "Unlock icon (drag to move)", "Shows a draggable preview so you can reposition it; re-lock when done.",
+		function() return not HL.db.alerts.locked end,
+		function(v) HL:ToggleNightfallConfigMode(v) end)
+	L.nextRow()
 
 	return panel
 end

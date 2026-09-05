@@ -84,6 +84,7 @@ function HL:OnEnable()
 		return
 	end
 
+	self.IsSoD = self:DetectSoD()
 	self:RefreshKnownSpells()
 	self:BuildBar()
 	self:InitOptions()
