@@ -73,6 +73,28 @@ HL.SHADOW_TRANCE_SPELLID = 17941
 HL.SHADOW_TRANCE_NAME = (GetSpellInfo(17941))
 
 ------------------------------------------------------------------------
+-- Ruleset detection: is this realm running Season of Discovery?
+--
+-- SoD runs on the same Classic Era client as vanilla/Anniversary/Hardcore
+-- realms, so a spell ID alone can't tell an SoD rune ability (Felguard,
+-- Fel Armor, Portal of Summoning) from one that simply isn't learned *yet*
+-- -- IsKnown() returns false either way. Gate on the season itself so those
+-- entries can be hidden from menus/dropdowns entirely on non-SoD realms,
+-- instead of just quietly failing to cast when clicked.
+------------------------------------------------------------------------
+
+function HL:DetectSoD()
+	if C_Seasons and C_Seasons.GetActiveSeason and Enum.SeasonID and Enum.SeasonID.SeasonOfDiscovery then
+		local ok, season = pcall(C_Seasons.GetActiveSeason)
+		if ok then return season == Enum.SeasonID.SeasonOfDiscovery end
+	end
+	return false
+end
+
+-- Usages that only exist (or are only reachable) via an SoD rune.
+HL.SoDOnlyUsage = { felguard = true, fel_armor = true, summon_portal = true }
+
+------------------------------------------------------------------------
 -- Resolution helpers
 ------------------------------------------------------------------------
 

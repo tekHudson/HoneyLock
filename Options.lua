@@ -280,7 +280,7 @@ local function buildButtonsPage()
 
 	local function menuChoices(key)
 		local t = {}
-		for _, usage in ipairs(HL.MenuUsages[key]) do
+		for _, usage in ipairs(HL:MenuEntries(key)) do
 			t[#t + 1] = { text = HL:GetCastName(usage) or usage, value = usage }
 		end
 		return t

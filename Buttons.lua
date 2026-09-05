@@ -75,9 +75,22 @@ local MENU_CONTENTS = {
 	-- Fastest first so the default falls back to the fastest mount you know.
 	mount     = { "dreadsteed", "felsteed" },
 }
-HL.MenuUsages = MENU_CONTENTS  -- exposed for the options panel
 
 local MENU_KEYS = { "buffmenu", "petmenu", "utility", "mount" }
+
+-- A menu's contents, with SoD-only usages (see Spells.lua) dropped entirely
+-- outside SoD -- IsKnown() alone can't distinguish "not learned yet" from
+-- "this realm can never learn it", so those would otherwise sit in the
+-- flyout/dropdown as dead entries that silently fail to cast.
+function HL:MenuEntries(key)
+	local list = MENU_CONTENTS[key]
+	if self.IsSoD then return list end
+	local out = {}
+	for _, usage in ipairs(list) do
+		if not HL.SoDOnlyUsage[usage] then out[#out + 1] = usage end
+	end
+	return out
+end
 
 -- Self-cast usages get unit="player"; everything else uses normal targeting.
 local SELF_CAST = {
@@ -378,7 +391,7 @@ function HL:MakeMenu(name, parent, key, icon)
 	-- Flyout flows outward along the satellite's own cluster angle.
 	anchor.angle = (CLUSTER[key] and CLUSTER[key].angle) or 90
 
-	local entries = MENU_CONTENTS[key]
+	local entries = self:MenuEntries(key)
 	for _, usage in ipairs(entries) do
 		local child = self:MakeSpellButton(name .. "_" .. usage, flyout, usage)
 		child:SetSize(size, size)
